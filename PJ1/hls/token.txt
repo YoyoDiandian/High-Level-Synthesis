@@ -1,0 +1,48 @@
+ret type: int
+function name dotprod
+array
+a
+array
+b
+non-array
+n
+Basic Block label: 0
+value c 
+OP TYPE:0
+0 
+Basic Block label: start
+value i 
+OP TYPE:13
+0 0 i_inc calc 
+value cl 
+OP TYPE:13
+c 0 cr calc 
+value cond 
+OP TYPE:11
+i n 
+value  
+OP TYPE:7
+cond ret calc 
+Basic Block label: calc
+value ai 
+OP TYPE:5
+a i 
+value bi 
+OP TYPE:5
+b i 
+value ci 
+OP TYPE:3
+ai bi 
+value cr 
+OP TYPE:1
+cl ci 
+value i_inc 
+OP TYPE:1
+i 1 
+value  
+OP TYPE:7
+start 
+Basic Block label: ret
+value  
+OP TYPE:14
+cl 
