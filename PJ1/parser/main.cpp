@@ -3,13 +3,18 @@
 
 int main(int argc, char ** argv)
 {
-    std::ofstream parserOutput("token.txt");
-    if(argc != 2)
+    if(argc != 3)
     {
-        parserOutput << "Usage:" << argv[0] << "filename\n";
-        parserOutput.close();
+        std::cout << "Usage: " << argv[0] << " input_filename output_filename\n";
         return -1;
     }
+    std::ofstream parserOutput(argv[2]);
+    // if(argc != 2)
+    // {
+    //     parserOutput << "Usage:" << argv[0] << "filename\n";
+    //     parserOutput.close();
+    //     return -1;
+    // }
     parser p(argv[1]);
 
     if(p.parse() != 0)

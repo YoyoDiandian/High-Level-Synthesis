@@ -1,6 +1,6 @@
-LINK    = @echo linking $@ && g++ 
-GCC     = @echo compiling $@ && g++ 
-GC      = @echo compiling $@ && gcc 
+LINK    = @echo linking $@ && g++ -w
+GCC     = @echo compiling $@ && g++ -w
+GC      = @echo compiling $@ && gcc -w
 AR      = @echo generating static library $@ && ar crv
 FLAGS   = -g -DDEBUG -W -Wall -fPIC
 GCCFLAGS = 
@@ -11,7 +11,6 @@ LINKFLAGS =
 
 #LIBS    += -lrt
 #LIBS    += -pthread
-
 
 
 hls: parser.o main.o
