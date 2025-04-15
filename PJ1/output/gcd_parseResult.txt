@@ -1,0 +1,50 @@
+ret type: int
+function name gcd
+non-array
+a
+non-array
+b
+Basic Block label: 0
+value c 
+OP TYPE:0
+a 
+value d 
+OP TYPE:0
+b 
+Basic Block label: start
+value a1 
+OP TYPE:13
+c 0 divisor cal 
+value b1 
+OP TYPE:13
+d 0 remainder cal 
+value a_LE_b 
+OP TYPE:11
+a1 b1 
+value  
+OP TYPE:7
+a_LE_b cal exchange 
+Basic Block label: cal
+value divisor 
+OP TYPE:13
+b1 start a1 exchange 
+value larger 
+OP TYPE:13
+a1 start b1 exchange 
+value remainder 
+OP TYPE:2
+larger divisor 
+value cond 
+OP TYPE:12
+remainder 0 
+value  
+OP TYPE:7
+cond ret start 
+Basic Block label: exchange
+value  
+OP TYPE:7
+cal 
+Basic Block label: ret
+value  
+OP TYPE:14
+divisor 

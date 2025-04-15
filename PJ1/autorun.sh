@@ -14,7 +14,7 @@ fi
 
 # Define constants
 PARSER_DIR="parser"
-PARSE_RESULT="parseResult.txt"
+PARSE_RESULT="$(basename "${1%.ll}")_parseResult.txt"
 EXAMPLE_DIR="example"
 OUTPUT_DIR="output"
 
@@ -35,7 +35,8 @@ echo "Parser completed successfully"
 
 # Step 2: Generate CDFG
 cd ..
-echo "start python files..."
+echo ""
+echo "Start running python files..."
 if ! python3 main.py "$OUTPUT_DIR/$PARSE_RESULT"; then
     echo "Error: CDFG generation failed"
     cd "$OUTPUT_DIR" || exit 1

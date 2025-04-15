@@ -42,24 +42,43 @@ BasicBlock(label)
 
 ```
 BasicBlock {
+    // 基本块唯一标识符
     label: "for.body",
+    
+    // 操作列表: [操作结果, 操作类型, 操作数...]
     ops: [
-        ['c', 0, '0'],             // 给c赋值
-        ['ai', 5, 'a', 'i'],       // ai = a * i
-        ['', 7, 'cond', 'ret', 'calc']  // 分支指令
+        ['c', 0, '0'],                      // [赋值结果, 赋值类型, 操作数] - 给c赋值0
+        ['ai', 5, 'a', 'i'],                // [结果值, 加载操作, 数组, 索引] - 从a[i]加载到ai
+        ['sum', 1, 'sum', 'ai'],            // [结果值, 加法, 左操作数, 右操作数] - sum = sum + ai
+        ['i', 1, 'i', '1'],                 // [结果值, 加法, 左操作数, 右操作数] - i = i + 1
+        ['cond', 8, 'i', 'n'],              // [结果值, 小于比较, 左操作数, 右操作数] - cond = (i < n)
+        ['', 7, 'cond', 'for.body', 'ret']  // [无结果, 分支指令, 条件, 真分支, 假分支] - if(cond) goto for.body else goto ret
     ],
+    
+    // 数据流图: 表示操作间的数据依赖关系
     dfg: DiGraph {
+        // 节点: 操作索引 -> 操作内容
         nodes: {
-            0: {operation: ["i.0", 4, "i"]},
-            1: {operation: ["mul", 2, "i.0", "2"]},
-            2: {operation: ["", 7, "exitcond", "for.end", "for.body"]}
+            0: {operation: ['c', 0, '0']},
+            1: {operation: ['ai', 5, 'a', 'i']},
+            2: {operation: ['sum', 1, 'sum', 'ai']},
+            3: {operation: ['i', 1, 'i', '1']},
+            4: {operation: ['cond', 8, 'i', 'n']},
+            5: {operation: ['', 7, 'cond', 'for.body', 'ret']}
         },
+        
+        // 边: (源操作, 目标操作) -> 传递的值
         edges: {
-            (0, 1): {value: "i.0"},
-            (1, 2): {value: "bi"}
+            (0, 2): {value: "c"},     // 操作0生成的c被操作2使用
+            (1, 2): {value: "ai"},    // 操作1生成的ai被操作2使用
+            (3, 1): {value: "i"},     // 操作3生成的i被操作1使用
+            (3, 4): {value: "i"},     // 操作3生成的i被操作4使用
+            (4, 5): {value: "cond"}   // 操作4生成的cond被操作5使用
         }
     },
-    next_bb: "for.end"
+    
+    // 程序顺序上的下一个基本块
+    next_bb: "ret"
 }
 ```
 
@@ -112,27 +131,74 @@ CDFG()
 
 ```
 CDFG {
-    function_name: "sum",
-    ret_type: "int",
-    params: [("arr", "array"), ("n", "non-array")],
+    // 函数元数据
+    functionName: "sum_array",
+    retType: "int",
+    params: [
+        ("a", "array"),     // 数组参数
+        ("n", "non-array")  // 非数组参数
+    ],
     
-    basic_blocks: {
-        "entry": BasicBlock { ... },
-        "for.body": BasicBlock { ... },
-        "for.end": BasicBlock { ... }
+    // 基本块集合
+    basicBlocks: {
+        "start": BasicBlock {
+            ops: [
+                ["i", 0, "0"],           // i = 0
+                ["sum", 0, "0"],         // sum = 0
+                ["", 7, "", "for.body"]  // goto for.body
+            ],
+        },
+        "for.body": BasicBlock {
+            ops: [
+                // 上面详细展示的for.body基本块
+            ],
+        },
+        "ret": BasicBlock {
+            ops: [
+                ["", 14, "sum"]  // return sum
+            ],
+        }
     },
     
+    // 控制流图: 表示基本块间的跳转关系
     cfg: DiGraph {
+        // 节点: 基本块标签 -> 基本块对象
         nodes: {
-            "entry": {block: BasicBlock对象},
-            "for.body": {block: BasicBlock对象},
-            "for.end": {block: BasicBlock对象}
+            "start": {block: 开始基本块对象},
+            "for.body": {block: 循环体基本块对象},
+            "ret": {block: 返回基本块对象}
         },
+        
+        // 边: (源基本块, 目标基本块) -> 跳转条件
         edges: {
-            ("entry", "for.body"): {condition: "true"},
-            ("for.body", "for.body"): {condition: "i.0"},
-            ("for.body", "for.end"): {condition: "not i.0"}
+            ("start", "for.body"): {condition: "true"},             // 无条件跳转
+            ("for.body", "for.body"): {condition: "cond"},          // 条件为真时循环
+            ("for.body", "ret"): {condition: "not cond"}            // 条件为假时退出循环
         }
+    },
+    
+    // 调度结果: 基本块标签 -> [周期0操作列表, 周期1操作列表, ...]
+    schedule: {
+        // 开始基本块的调度
+        "start": [
+            [(0, 0)],                   // 周期0: [(操作索引, 设备索引)]
+            [(1, 0)],                   // 周期1: [(操作索引, 设备索引)]
+            [(2, 0)]                    // 周期2: [(操作索引, 设备索引)]
+        ],
+        
+        // 循环基本块的调度
+        "for.body": [
+            [(0, 0), (1, 0)],           // 周期0: [(c赋值操作, 设备0), (ai加载操作, 设备0)]
+            [(2, 0)],                   // 周期1: [(sum加法操作, 设备0)]
+            [(3, 0)],                   // 周期2: [(i加法操作, 设备0)]
+            [(4, 0)],                   // 周期3: [(条件比较操作, 设备0)]
+            [(5, 0)]                    // 周期4: [(分支操作, 设备0)]
+        ],
+        
+        // 返回基本块的调度
+        "ret": [
+            [(0, 0)]                    // 周期0: [(返回操作, 设备0)]
+        ]
     }
 }
 ```

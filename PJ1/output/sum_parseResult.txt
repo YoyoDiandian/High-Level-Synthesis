@@ -1,0 +1,51 @@
+ret type: int
+function name Sum
+array
+a
+array
+b
+non-array
+n
+Basic Block label: 0
+value c 
+OP TYPE:0
+0 
+Basic Block label: start
+value i 
+OP TYPE:13
+0 0 i_inc calc 
+value sum 
+OP TYPE:13
+c 0 temp calc 
+value cond 
+OP TYPE:11
+i n 
+value  
+OP TYPE:7
+cond ret calc 
+Basic Block label: calc
+value ai 
+OP TYPE:5
+a i 
+value temp 
+OP TYPE:1
+sum ai 
+value  
+OP TYPE:6
+b i temp 
+value i_inc 
+OP TYPE:1
+i 1 
+value  
+OP TYPE:7
+start 
+Basic Block label: ret
+value num 
+OP TYPE:2
+n 1 
+value res 
+OP TYPE:5
+b num 
+value  
+OP TYPE:14
+res 
