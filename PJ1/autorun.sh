@@ -15,6 +15,8 @@ fi
 # Define constants
 PARSER_DIR="parser"
 PARSE_RESULT="parseResult.txt"
+EXAMPLE_DIR="example"
+OUTPUT_DIR="output"
 
 # Step 1: Run parser
 echo "Starting parser..."
@@ -24,7 +26,7 @@ if ! make; then
     exit 1
 fi
 
-if ! ./hls "../$1" "$PARSE_RESULT"; then
+if ! ./hls "../$1" "../$OUTPUT_DIR/$PARSE_RESULT"; then
     echo "Error: Parser execution failed"
     exit 1
 fi
@@ -33,16 +35,19 @@ echo "Parser completed successfully"
 
 # Step 2: Generate CDFG
 cd ..
-echo "Generating CDFG..."
-if ! python3 cdfgGenerator.py "$PARSER_DIR/$PARSE_RESULT"; then
+echo "start python files..."
+if ! python3 main.py "$OUTPUT_DIR/$PARSE_RESULT"; then
     echo "Error: CDFG generation failed"
+    cd "$OUTPUT_DIR" || exit 1
+    rm -f "$PARSE_RESULT"*
+    make clean
     exit 1
 fi
 
 # Step 3: Cleanup
 echo "Cleaning up..."
 cd "$PARSER_DIR" || exit 1
-rm -f "$PARSE_RESULT"*
+# rm -f "$PARSE_RESULT"*
 make clean
 
 echo "Process completed successfully"
