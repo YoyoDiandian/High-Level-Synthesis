@@ -30,7 +30,12 @@
 - 修改`autorun.sh`，直接调用`main.py`
 - 修改文件夹结构，`python`文件统一放在`/hls`目录下，`main.py`放在PJ1目录下
 
-## 4.15
+## 4.15 bff7cc1be066a1e7098f622812d18dfa1bcfc96c
 - 在测试文件中增加`gcd.ll`及`sum.ll`
 - 修改`autorun.sh`文件，使输出的parserResult文件名与输入的文件相关
 - 在IO port的修改CDFG和BasicBlock的内部结构示例
+
+## 4.16 
+- 将标准RTL输出放到`/output/RTL`下
+- 添加verilog编译文件`output/RTL/compiler.sh`，并将标准RTL的波形图输出放在`/output/RTL/wave`下
+- 将所有parseResult放在`output/parseResult`下
