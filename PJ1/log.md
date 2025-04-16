@@ -35,7 +35,12 @@
 - 修改`autorun.sh`文件，使输出的parserResult文件名与输入的文件相关
 - 在IO port的修改CDFG和BasicBlock的内部结构示例
 
-## 4.16 
+## 4.16 324a523cccb5fd1a7629d30c8acc3b8bbdb5cf3d
 - 将标准RTL输出放到`/output/RTL`下
 - 添加verilog编译文件`output/RTL/compiler.sh`，并将标准RTL的波形图输出放在`/output/RTL/wave`下
 - 将所有parseResult放在`output/parseResult`下
+
+## 4.16 
+- 增加`registerAllocator`功能
+- 更改`cdfgGenerator`和`scheduler`的内容，将输出统一到`output/outputFlow.txt`下
+- 更新`scheduler.py`，可以不在最后一个周期调度分支指令

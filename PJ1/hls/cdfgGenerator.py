@@ -196,46 +196,53 @@ class CDFG:
         return self.basicBlocks
 
 
-# def printCDFG(cdfg):
-#     """打印CDFG的基本信息"""
-#     print("\n===== CDFG 基本信息 =====")
-#     print(f"函数名: {cdfg.functionName}")
-#     print(f"返回类型: {cdfg.retType}")
-#     print(f"参数: {cdfg.params}")
-#     print("========================\n")
+def printCDFG(cdfg, file=None):
+    """打印CDFG的基本信息"""
+    print("===== 函数基本信息 =====", file=file)
+    print(f"函数名: {cdfg.functionName}", file=file)
+    print(f"返回类型: {cdfg.retType}", file=file)
+    print(f"参数: {cdfg.params}", file=file)
+    print("========================\n", file=file)
 
 
-# def printBasicBlocks(cdfg):
-#     """打印所有基本块的信息"""
-#     print("\n===== 基本块信息 =====")
-#     for label, bb in cdfg.basicBlocks.items():
-#         print(f"基本块 {label}:")
-#         print(f"  下一个基本块: {bb.next_bb}")
+def printBasicBlocks(cdfg, file=None):
+    """打印所有基本块的信息"""
+    print("===== 基本块信息 =====", file=file)
+    for label, bb in cdfg.basicBlocks.items():
+        print(f"基本块 {label}:", file=file)
+        print(f"  下一个基本块: {bb.next_bb}", file=file)
         
-#         print("  操作列表:")
-#         for i, op in enumerate(bb.ops):
-#             print(f"    [{i}] {op}")
-#     print("===================\n")
+        print("  操作列表:", file=file)
+        for i, op in enumerate(bb.ops):
+            print(f"    [{i}] {op}", file=file)
+    print("===================\n", file=file)
 
 
-# def printCFG(cdfg):
-#     """打印控制流图信息"""
-#     print("\n===== 控制流图 (CFG) =====")
-#     for u, v, data in cdfg.cfg.edges(data=True):
-#         print(f"  {u} -> {v} [条件: {data['condition']}]")
-#     print("=======================\n")
+def printCFG(cdfg, file=None):
+    """打印控制流图信息"""
+    print("===== 控制流图 (CFG) =====", file=file)
+    for u, v, data in cdfg.cfg.edges(data=True):
+        print(f"  {u} -> {v} [条件: {data['condition']}]", file=file)
+    print("=======================\n", file=file)
 
 
-# def printDFG(cdfg):
-#     """打印所有基本块的数据流图信息"""
-#     print("\n===== 数据流图 (DFG) =====")
-#     for label, bb in cdfg.basicBlocks.items():
-#         if len(bb.dfg.edges()) > 0:
-#             print(f"  基本块 {label} 的DFG:")
-#             for u, v, data in bb.dfg.edges(data=True):
-#                 value = data.get('value', '')
-#                 print(f"    操作 {u} -> {v} [值: {value}]")
-#     print("=======================\n")
+def printDFG(cdfg, file=None):
+    """打印所有基本块的数据流图信息"""
+    print("===== 数据流图 (DFG) =====", file=file)
+    for label, bb in cdfg.basicBlocks.items():
+        if len(bb.dfg.edges()) > 0:
+            print(f"  基本块 {label} 的DFG:", file=file)
+            for u, v, data in bb.dfg.edges(data=True):
+                value = data.get('value', '')
+                print(f"    操作 {u} -> {v} [值: {value}]", file=file)
+    print("=======================\n", file=file)
+
+def cdfgPrinter(cdfg, file=None):
+    """打印CDFG的基本信息"""
+    printCDFG(cdfg, file)
+    printBasicBlocks(cdfg, file)    
+    printCFG(cdfg, file)
+    printDFG(cdfg, file)
 
 
 # def main():
