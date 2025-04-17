@@ -30,10 +30,10 @@ def main():
     cdfg.generateDFGs()
     
     # 调度
-    cdfg.scheduleASAP()
+    cdfg.scheduleASAP() # type: ignore
     
     # 寄存器分配
-    cdfg.allocate_registers(num_registers=8)  # 假设有8个通用寄存器
+    cdfg.allocate_registers(num_registers=8)  # type: ignore # 假设有8个通用寄存器
     
     # 输出结果
     with open(outputFile, 'w') as f:

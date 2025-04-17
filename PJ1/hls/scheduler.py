@@ -61,13 +61,18 @@ def initializeSchedulingResources(bb):
     in_degree = dict(bb.dfg.in_degree())
     
     # 确保所有操作都有入度值（包括孤立节点）
-    for i in range(len(bb.ops)):
-        if i not in in_degree:
-            in_degree[i] = 0
+    # for i in range(len(bb.ops)):
+    #     if i not in in_degree:
+    #         in_degree[i] = 0
+    in_degree = {i: in_degree.get(i, 0) for i in range(len(bb.ops))}
     
-    # 初始化各种跟踪变量
+    # 初始化跟踪变量
+    # time remain for certain resource on certain operation
     time_remain = [0] * len(bb.ops)
+    # show certain operation is occupying device or not
     device_occupied = [-1] * len(bb.ops)
+    # show all the occupation situation
+    # 0 means not occupied; 1 means occupied
     occupation = [[0] * RESOURCE[i] for i in range(len(RESOURCE))]
     
     return in_degree, time_remain, device_occupied, occupation
@@ -78,7 +83,7 @@ def processRunningOperations(bb, time_remain, device_occupied, occupation, in_de
         if time_remain[i] <= 0:
             continue
             
-        # 计时器递减
+        # decrease the time remain
         time_remain[i] -= 1
         
         # 如果操作执行完毕
@@ -90,7 +95,7 @@ def processRunningOperations(bb, time_remain, device_occupied, occupation, in_de
             
             # 从未完成列表中移除
             unfinished.remove(i) if i in unfinished else None
-            
+
             # 降低依赖该操作的后继操作的入度
             for _, dst in bb.dfg.out_edges(i):
                 in_degree[dst] -= 1
@@ -196,7 +201,7 @@ def scheduleASAP(self):
     for bbLabel, bb in self.basicBlocks.items():
         # 初始化基本块的调度结果
         bb_schedule = []
-        
+        print(f"\nbasic block label: {bbLabel}\n")
         # 初始化调度所需的各种数据结构
         in_degree, time_remain, device_occupied, occupation = initializeSchedulingResources(bb)
         
@@ -224,7 +229,11 @@ def scheduleASAP(self):
                 if handleDeadlock(bb, unfinished, ready, in_degree, sent):
                     continue
                 break
-        
+            
+            print(f"unfinished: {unfinished}")
+            print(f"sent: {sent}")
+            print(f"ready: {ready}")
+
         # 处理分支指令的特殊要求
         # ensureBranchOrder(bb, bb_schedule)
         
@@ -237,7 +246,7 @@ def schedulePrinter(cdfg, file=None):
     for bbLabel, cycles in cdfg.schedule.items():
         print(f"基本块 {bbLabel} 的调度结果:", file=file)
         for cycle_idx, ops in enumerate(cycles):
-            print(f"  周期 {cycle_idx}: ", end="", file=file)
+            print(f"\t周期 {cycle_idx}: ", end="", file=file)
             for op_idx, device_idx in ops:
                 op = cdfg.basicBlocks[bbLabel].ops[op_idx]
                 op_type_name = getOperationName(op[1])

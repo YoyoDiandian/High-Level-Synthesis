@@ -44,3 +44,6 @@
 - 增加`registerAllocator`功能
 - 更改`cdfgGenerator`和`scheduler`的内容，将输出统一到`output/outputFlow.txt`下
 - 更新`scheduler.py`，可以不在最后一个周期调度分支指令
+
+## 4.17
+- 更改`cdfgGenerator.py`和`scheduler.py`中的一小部分代码表述

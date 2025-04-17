@@ -256,7 +256,7 @@ class RegisterAllocator:
         # ... [保持原有代码不变] ...
         sorted_nodes = sorted(
             self.interference_graph.nodes(), 
-            key=lambda x: self.interference_graph.degree(x),
+            key=lambda x: self.interference_graph.degree(x), # type: ignore
             reverse=True
         )
         
@@ -288,7 +288,7 @@ class RegisterAllocator:
         # ... [保持原有代码不变] ...
         sorted_nodes = sorted(
             self.interference_graph.nodes(), 
-            key=lambda x: self.interference_graph.degree(x),
+            key=lambda x: self.interference_graph.degree(x), # type: ignore
             reverse=True
         )
         

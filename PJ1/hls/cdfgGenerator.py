@@ -90,12 +90,12 @@ class CDFG:
             self.functionName = func_name_match.group(1)
         
         # 解析参数
-        params = []
+        # params = []
         param_matches = re.finditer(r'(array|non-array)\s+(\w+)', content)
         for match in param_matches:
             param_type, param_name = match.groups()
-            params.append((param_name, param_type))
-        self.params = params
+            self.params.append((param_name, param_type))
+        # self.params = params
         
         # 解析基本块
         basic_block_pattern = r'Basic Block label: (\w+)(.*?)(?=Basic Block label:|$)'
@@ -103,7 +103,7 @@ class CDFG:
         
         # 获取所有基本块标签
         bb_labels = []
-        for match in re.finditer(basic_block_pattern, content, re.DOTALL):
+        for match in basic_block_matches:
             label = match.group(1)
             bb_labels.append(label)
         
@@ -210,11 +210,11 @@ def printBasicBlocks(cdfg, file=None):
     print("===== 基本块信息 =====", file=file)
     for label, bb in cdfg.basicBlocks.items():
         print(f"基本块 {label}:", file=file)
-        print(f"  下一个基本块: {bb.next_bb}", file=file)
+        print(f"\t下一个基本块: {bb.next_bb}", file=file)
         
-        print("  操作列表:", file=file)
+        print("\t操作列表:", file=file)
         for i, op in enumerate(bb.ops):
-            print(f"    [{i}] {op}", file=file)
+            print(f"\t\t[{i}] {op}", file=file)
     print("===================\n", file=file)
 
 
@@ -222,7 +222,7 @@ def printCFG(cdfg, file=None):
     """打印控制流图信息"""
     print("===== 控制流图 (CFG) =====", file=file)
     for u, v, data in cdfg.cfg.edges(data=True):
-        print(f"  {u} -> {v} [条件: {data['condition']}]", file=file)
+        print(f"\t{u} -> {v} [条件: {data['condition']}]", file=file)
     print("=======================\n", file=file)
 
 
@@ -231,10 +231,10 @@ def printDFG(cdfg, file=None):
     print("===== 数据流图 (DFG) =====", file=file)
     for label, bb in cdfg.basicBlocks.items():
         if len(bb.dfg.edges()) > 0:
-            print(f"  基本块 {label} 的DFG:", file=file)
+            print(f"\t基本块 {label} 的DFG:", file=file)
             for u, v, data in bb.dfg.edges(data=True):
                 value = data.get('value', '')
-                print(f"    操作 {u} -> {v} [值: {value}]", file=file)
+                print(f"\t\t操作 {u} -> {v} [值: {value}]", file=file)
     print("=======================\n", file=file)
 
 def cdfgPrinter(cdfg, file=None):
