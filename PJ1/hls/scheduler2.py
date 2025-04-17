@@ -51,7 +51,6 @@ def schedule_asap(self):
         for src, dsts in bb.dfg.items():
             for dst in dsts:
                 in_degree[dst] += 1
-        print(bb_label," : ",in_degree)
         # 每个指令的剩余时间
         time_remain = [0] * len(bb.ops)
         # 每个指令在占用的该类型计算单元索引
@@ -63,7 +62,6 @@ def schedule_asap(self):
         # 尚未执行完毕的指令
         unfinished = list(range(len(bb.ops)))
         sent = []
-        print("Unfinished:", unfinished)
         # 待调度的队列
         ready = []
         while unfinished:
@@ -78,7 +76,6 @@ def schedule_asap(self):
                         occupation[bb.ops[i][1]][device_occupied[i]] = 0
                         device_occupied[i] = -1
                         # 完成操作
-                        print(unfinished,i)
                         unfinished.remove(i)
                         # 削减入度
                         dsts = bb.dfg[i]
@@ -89,14 +86,11 @@ def schedule_asap(self):
                 if i not in sent and in_degree[i]==0:
                     ready.append(i)
                     sent.append(i)
-            print("ready:",ready)
             removal_list = []
             for i in ready:
-                print("trying to schedule:",i)
             # 检查该类型计算单元的每一个实例
                 for pos in range(len(occupation[bb.ops[i][1]])):
                     if occupation[bb.ops[i][1]][pos] == 0:
-                        print("successfully scheduling:",i)
                         # 若用空闲实例，则调度并占用资源
                         cycle_schedule.append((i,pos))
                         # 占用资源
@@ -107,10 +101,10 @@ def schedule_asap(self):
                         # 设定计时器
                         time_remain[i] = delay[bb.ops[i][1]]
                         break
-            print("time remaining", time_remain)
             for i in removal_list:
                 ready.remove(i)
             bb_schedule.append(cycle_schedule)
+        bb_schedule.pop()
         schedule_result[bb_label] = bb_schedule
     return schedule_result
 
