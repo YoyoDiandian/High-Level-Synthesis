@@ -163,6 +163,7 @@ def register_coloring(self):
         bb_coloring_result ={}
         # 将该块内局部变量初始化为未染色
         uncolored = list(living_period[bb_label].keys())
+        uncolored.sort(key = lambda x:(living_period[bb_label][x][0],(living_period[bb_label][x][1]-living_period[bb_label][x][0])))
         # 颜色0
         color = 0
         while uncolored:
@@ -198,44 +199,84 @@ def register_coloring(self):
         for sink_label,_ in cfg_adj_list[src_label]:
             src_coloring = coloring_result[src_label]
             sink_coloring = coloring_result[sink_label]
-            checklist = (output_variables[sink_label] & input_variables[src_label]) - global_variables
+            print(src_label,sink_label,":")
+            checklist = (output_variables[src_label] & input_variables[sink_label]) - global_variables
+            print(checklist)
             src_reg = -1
             sink_reg = -1
             for var_check in checklist:
                 flag = 0
                 for reg, var_list in src_coloring.items():
-                    for var in var_list:
-                        if var[0] == var_check:
-                            src_reg = reg
-                            flag = 1
-                            break
+                    if var_list[-1][0] == var_check:
+                        src_reg = reg
+                        flag = 1
+                        break
                     if flag:
                         break
                 flag = 0
                 for reg, var_list in sink_coloring.items():
-                    for var in var_list:
-                        if var[0] == var_check:
-                            sink_reg = reg
-                            flag = 1
-                            break
+                    if var_list[0][0] == var_check:
+                        sink_reg = reg
+                        flag = 1
+                        break
                     if flag:
                         break
                 if src_reg == sink_reg:
                     continue
                 else:
                     settled = 0
-                    src_var = None
-                    for var in src_coloring[src_reg]:
-                        if var[0] == var_check:
-                            src_coloring[src_reg].remove(var)
-                            src_var = var
+                    src_var = src_coloring[src_reg][-1]
                     if src_coloring[sink_reg]:
                         right_edge = src_coloring[sink_reg][-1][-1][-1]
                     else:
                         right_edge = -1
                     if src_var[-1][0] > right_edge:
-                        src_coloring[sink_reg].append(var)
+                        src_coloring[sink_reg].append(src_var)
+                        src_coloring[src_reg].pop()
                         settled = 1
+                    if not settled:
+                        if (len(src_coloring[src_reg])>1):
+                            src_right_edge = src_coloring[src_reg][-2][-1][-1]
+                        else:
+                            src_right_edge = -1
+                        if (len(src_coloring[sink_reg])>1):
+                            sink_right_edge = src_coloring[sink_reg][-2][-1][-1]
+                        else:
+                            sink_right_edge = -1
+                        if src_coloring[sink_reg][-1][-1][0] > src_right_edge and src_var[-1][0] > sink_right_edge:
+                            temp0 = src_coloring[src_reg].pop()
+                            temp1 = src_coloring[sink_reg].pop()
+                            src_coloring[src_reg].append(temp1)
+                            src_coloring[sink_reg].append(temp0)
+                            settled = 1
+
+                    if not settled:
+                        sink_var = sink_coloring[sink_reg][0]
+                        if sink_coloring[src_reg]:
+                            left_edge = sink_coloring[src_reg][0][-1][0]
+                        else:
+                            left_edge = sys.maxsize
+                        if sink_var[-1][1] < left_edge:
+                            sink_coloring[src_reg].insert(0,sink_var)
+                            settled = 1
+
+                    if not settled:
+                        if (len(sink_coloring[sink_reg])>1):
+                            sink_left_edge = sink_coloring[sink_reg][1][-1][0]
+                        else:
+                            sink_left_edge = sys.maxsize
+                        if (len(sink_coloring[src_reg])>1):
+                            src_left_edge = sink_coloring[src_reg][1][-1][0]
+                        else:
+                            src_left_edge = sys.maxsize
+                        if sink_coloring[src_reg][0][-1][-1] < sink_left_edge and sink_var[-1][-1] < src_left_edge:
+                            temp0 = sink_coloring[src_reg].pop(0)
+                            temp1 = sink_coloring[sink_reg].pop(0)
+                            sink_coloring[src_reg].insert(0,temp1)
+                            sink_coloring[sink_reg].insert(0,temp0)
+                            settled = 1
+                    
+
                     if not settled:
                         sink_var = None
                         for var in sink_coloring[sink_reg]:
