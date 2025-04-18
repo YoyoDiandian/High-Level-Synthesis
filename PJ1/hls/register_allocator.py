@@ -163,7 +163,7 @@ def register_coloring(self):
         bb_coloring_result ={}
         # 将该块内局部变量初始化为未染色
         uncolored = list(living_period[bb_label].keys())
-        uncolored.sort(key = lambda x:(living_period[bb_label][x][0],(living_period[bb_label][x][1]-living_period[bb_label][x][0])))
+        uncolored.sort(key = lambda x:(living_period[bb_label][x][0],(living_period[bb_label][x][1]-living_period[bb_label][x][0]),x))
         # 颜色0
         color = 0
         while uncolored:
@@ -199,26 +199,36 @@ def register_coloring(self):
         for sink_label,_ in cfg_adj_list[src_label]:
             src_coloring = coloring_result[src_label]
             sink_coloring = coloring_result[sink_label]
-            print(src_label,sink_label,":")
-            checklist = (output_variables[src_label] & input_variables[sink_label]) - global_variables
-            print(checklist)
+            #print(src_label,sink_label,":")
+            checklist = list((output_variables[src_label] & input_variables[sink_label]) - global_variables)
+            var_check_liveness = {}
+            for var_check in checklist:
+                for reg in src_coloring.values():
+                    if reg:
+                        if reg[-1][0] == var_check:
+                            var_check_liveness[var_check] = reg[-1][-1][-1]-reg[-1][-1][0]
+            checklist.sort(key=lambda x:(-var_check_liveness[x]))
+
+            #print(checklist)
             src_reg = -1
             sink_reg = -1
             for var_check in checklist:
                 flag = 0
                 for reg, var_list in src_coloring.items():
-                    if var_list[-1][0] == var_check:
-                        src_reg = reg
-                        flag = 1
-                        break
+                    if var_list:
+                        if var_list[-1][0] == var_check:
+                            src_reg = reg
+                            flag = 1
+                            break
                     if flag:
                         break
                 flag = 0
                 for reg, var_list in sink_coloring.items():
-                    if var_list[0][0] == var_check:
-                        sink_reg = reg
-                        flag = 1
-                        break
+                    if var_list:
+                        if var_list[0][0] == var_check:
+                            sink_reg = reg
+                            flag = 1
+                            break
                     if flag:
                         break
                 if src_reg == sink_reg:
@@ -259,7 +269,7 @@ def register_coloring(self):
                         if sink_var[-1][1] < left_edge:
                             sink_coloring[src_reg].insert(0,sink_var)
                             settled = 1
-
+                    '''
                     if not settled:
                         if (len(sink_coloring[sink_reg])>1):
                             sink_left_edge = sink_coloring[sink_reg][1][-1][0]
@@ -275,15 +285,11 @@ def register_coloring(self):
                             sink_coloring[src_reg].insert(0,temp1)
                             sink_coloring[sink_reg].insert(0,temp0)
                             settled = 1
-                    
+                    '''
 
                     if not settled:
-                        sink_var = None
-                        for var in sink_coloring[sink_reg]:
-                            if var[0] == var_check:
-                                sink_coloring[sink_reg].remove(var)
-                                sink_var = var
-                        for i in range(sink_reg+1,min_register_required):
+                        sink_var = sink_coloring[sink_reg][0]
+                        for i in range(0,min_register_required):
                             if src_coloring[i]:
                                 src_right_edge = src_coloring[i][-1][-1][-1]
                             else:
@@ -293,10 +299,15 @@ def register_coloring(self):
                             else:
                                 sink_left_edge = sys.maxsize
                             if src_var[-1][0] > src_right_edge and sink_var[-1][-1] < sink_left_edge:
+                                src_coloring[src_reg].pop()
+                                sink_coloring[sink_reg].pop(0)
                                 src_coloring[i].append(src_var)
                                 sink_coloring[i].insert(0,sink_var)
+
                                 settled = 1
                         if not settled:
+                            src_coloring[src_reg].pop()
+                            sink_coloring[sink_reg].pop(0)
                             src_coloring[min_register_required]=[src_var]
                             sink_coloring[min_register_required]=[sink_var]
                             min_register_required += 1
