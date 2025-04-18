@@ -45,5 +45,11 @@
 - 更改`cdfgGenerator`和`scheduler`的内容，将输出统一到`output/outputFlow.txt`下
 - 更新`scheduler.py`，可以不在最后一个周期调度分支指令
 
-## 4.17
+## 4.17 ec9f37dad08e3115d83828b3c3e7642d54205f87
 - 更改`cdfgGenerator.py`和`scheduler.py`中的一小部分代码表述
+
+## 4.19 
+- 微改`autorun.sh`，在终端中输出`main.py`运行成功的信息
+- 更改`main.py`，import `registerAllocator.py`；通过运行`sh autorun.sh example/xxx.ll `
+可以直接得到CDFG、调度结果、全局变量、寄存器生存周期和染色结果等信息。
+- 更改`scheduler.py`中的`schedulePrinter`

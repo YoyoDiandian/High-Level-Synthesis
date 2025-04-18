@@ -46,6 +46,8 @@ if ! python3 main.py "$PARSE_RESULR_DIR/$PARSE_RESULT"; then
     exit 1
 fi
 
+echo "main.py completed successfully"
+
 # Step 3: Cleanup
 echo "Cleaning up..."
 cd "$PARSER_DIR" || exit 1

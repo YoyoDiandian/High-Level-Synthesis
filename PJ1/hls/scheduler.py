@@ -32,7 +32,7 @@ RESOURCE = [
     1, # OP_LE
     1, # OP_GE
     1, # OP_EQ
-    2, # OP_PHI
+    1, # OP_PHI
     1, # OP_RET
 ]
 
@@ -43,7 +43,7 @@ DELAY = [
     1, # OP_SUB
     1, # OP_MUL
     1, # OP_DIV
-    2, # OP_LOAD
+    1, # OP_LOAD
     1, # OP_STORE
     1, # OP_BR
     1, # OP_LT
@@ -51,7 +51,7 @@ DELAY = [
     1, # OP_LE
     1, # OP_GE
     1, # OP_EQ
-    2, # OP_PHI
+    1, # OP_PHI
     1, # OP_RET
 ]
 
@@ -201,7 +201,7 @@ def scheduleASAP(self):
     for bbLabel, bb in self.basicBlocks.items():
         # 初始化基本块的调度结果
         bb_schedule = []
-        print(f"\nbasic block label: {bbLabel}\n")
+        # print(f"\nbasic block label: {bbLabel}\n")
         # 初始化调度所需的各种数据结构
         in_degree, time_remain, device_occupied, occupation = initializeSchedulingResources(bb)
         
@@ -230,29 +230,43 @@ def scheduleASAP(self):
                     continue
                 break
             
-            print(f"unfinished: {unfinished}")
-            print(f"sent: {sent}")
-            print(f"ready: {ready}")
+            # print(f"unfinished: {unfinished}")
+            # print(f"sent: {sent}")
+            # print(f"ready: {ready}")
 
         # 处理分支指令的特殊要求
         # ensureBranchOrder(bb, bb_schedule)
-        
+        bb_schedule.pop()
         # 保存基本块的调度结果
         self.schedule[bbLabel] = bb_schedule
 
+# def schedulePrinter(cdfg, file=None):
+#     """打印调度结果"""
+#     print("\n======= 调度结果 =======", file=file)
+#     for bbLabel, cycles in cdfg.schedule.items():
+#         print(f"基本块 {bbLabel} 的调度结果:", file=file)
+#         for cycle_idx, ops in enumerate(cycles):
+#             print(f"\t周期 {cycle_idx}: ", end="", file=file)
+#             for op_idx, device_idx in ops:
+#                 op = cdfg.basicBlocks[bbLabel].ops[op_idx]
+#                 op_type_name = getOperationName(op[1])
+#                 print(f"(操作 {op_idx}:{op_type_name}, 设备 {device_idx}) ", end="", file=file)
+#             print(file=file)
+#     print("=========================\n", file=file)
+
 def schedulePrinter(cdfg, file=None):
-    """打印调度结果"""
-    print("\n======= 调度结果 =======", file=file)
+    """
+    Print schedule results.
+    """
+    print("Schedule results:", file=file)
     for bbLabel, cycles in cdfg.schedule.items():
-        print(f"基本块 {bbLabel} 的调度结果:", file=file)
+        print(f"Basic block {bbLabel}'s schedule results:", file=file)
         for cycle_idx, ops in enumerate(cycles):
-            print(f"\t周期 {cycle_idx}: ", end="", file=file)
+            print(f"  cycle {cycle_idx}: ", end="", file=file)
             for op_idx, device_idx in ops:
-                op = cdfg.basicBlocks[bbLabel].ops[op_idx]
-                op_type_name = getOperationName(op[1])
-                print(f"(操作 {op_idx}:{op_type_name}, 设备 {device_idx}) ", end="", file=file)
+                print(f"(operation {op_idx}, resource {device_idx}) ", end="", file=file)
             print(file=file)
-    print("=========================\n", file=file)
+    print(35 * "-", file=file)
 
 def getOperationName(op_type):
     """获取操作类型的名称"""

@@ -1,444 +1,492 @@
-import networkx as nx
-from collections import defaultdict
+from scheduler import scheduleASAP, schedulePrinter, addScheduler
+from cdfgGenerator import BasicBlock, CDFG
+import sys
 
-class RegisterAllocator:
-    """使用图着色法进行寄存器分配，支持全局寄存器分配"""
+def get_op_operands(op):
+    op_type = op[1]
+    if op_type == 13: # phi操作
+        operands = set(op[2::2])
+    elif op_type == 5 or op_type == 6: # 存取操作
+        operands = set(op[3:])
+    elif op_type == 7: # 跳转操作
+        if len(op) > 3: # 有条件跳转
+            operands = {op[2]}
+        else:
+            operands = set()
+    else:
+        operands = set(op[2:])
+    return operands
+
+def get_op_left_values(op):
+    return op[0]
+
+def get_bb_operands(self):
+    operands = set()
+    for op in self.ops:
+        if op[1] == 13:
+            operands = operands | set(op[2::2])
+        elif op[1] == 5 or op[1] == 6:
+            operands = operands | set(op[3:])
+        elif op[1] == 7:
+            if len(op) > 3:
+               operands.add(op[2])
+        else:
+            operands = operands | set(op[2:])
+    return operands
+
+def get_bb_left_values(self):
+    left_values = set()
+    for op in self.ops:
+        if op[0]:
+            left_values.add(op[0])
+
+    return left_values
+
+def get_input_output_variables(self):
+    param_list = [param[0] for param in self.params]
+    # for param in self.params:
+    #     param_list.append(param[0])
+    input_variables = {}
+    output_variables = {}
+    require_variables = {}
+    visited = {}
+
+    for bb in self.basicBlocks:
+        visited[bb] = 0
+        input_variables[bb] = set()
+        require_variables[bb] = self.basicBlocks[bb].get_bb_operands()-self.basicBlocks[bb].get_bb_left_values()
+    bb_queue = ['0']
+    visited['0'] = 1
+    while bb_queue:
+        bb = bb_queue.pop(0)
+        output_variables[bb] = (input_variables[bb] | self.basicBlocks[bb].get_bb_left_values())-self.basicBlocks[bb].get_bb_operands()
+        for edge in self.cfg.successors(bb):
+            next_bb = edge
+            input_variables[next_bb] = input_variables[next_bb] | output_variables[bb]
+            if visited[next_bb] == 0:
+                visited[next_bb] = 1
+                bb_queue.append(next_bb)
+
+    for label, variable_set in input_variables.items():
+        removal_list = []
+        for v in variable_set:
+            if (v in param_list) or v.isdigit():
+                removal_list.append(v)
+        for v in removal_list:
+            input_variables[label].remove(v)
+
+    for label, variable_set in output_variables.items():
+        removal_list = []
+        for v in variable_set:
+            if (v in param_list) or v.isdigit():
+                removal_list.append(v)
+        for v in removal_list:
+            output_variables[label].remove(v)
+
     
-    def __init__(self, num_registers=8):
-        """初始化寄存器分配器"""
-        self.num_registers = num_registers
-        self.variable_map = {}  # 变量名到节点ID的映射
-        self.interference_graph = nx.Graph()  # 冲突图
-        self.register_allocation = {}  # 寄存器分配结果
-        self.spilled_vars = []  # 溢出到内存的变量
-        self.global_var_def = {}  # 全局变量定义基本块
-        self.global_var_uses = defaultdict(list)  # 全局变量使用基本块
 
-    def analyze_global_variables(self, cdfg):
-        """
-        分析全局变量（在多个基本块中使用的变量）
-        
-        参数：
-            cdfg: CDFG对象
-        
-        返回：
-            global_vars: 全局变量集合
-        """
-        # 记录每个变量在哪些基本块中定义或使用
-        var_blocks = defaultdict(set)
-        
-        # 遍历所有基本块
-        for bb_label, bb in cdfg.basicBlocks.items():
-            # 跳过没有调度信息的基本块
-            if bb_label not in cdfg.schedule:
-                continue
-                
-            # 分析基本块中的操作
-            for ops in cdfg.schedule[bb_label]:
-                for op_idx, _ in ops:
-                    operation = bb.ops[op_idx]
-                    
-                    # 记录结果变量
-                    result_var = operation[0]
-                    if result_var:
-                        var_blocks[result_var].add(bb_label)
-                        self.global_var_def[result_var] = bb_label
-                    
-                    # 记录操作数
-                    for var in operation[2:]:
-                        if isinstance(var, str) and not var.isdigit() and var:
-                            var_blocks[var].add(bb_label)
-                            self.global_var_uses[var].append(bb_label)
-        
-        # 过滤出在多个基本块中使用的变量
-        global_vars = {var for var, blocks in var_blocks.items() if len(blocks) > 1}
-        
-        return global_vars
+    return input_variables, output_variables
 
-    def build_global_liveness_info(self, cdfg):
-        """
-        构建全局变量的生命周期信息
+def get_global_variables(self):
+    global_variable_set = set()
+    for param in self.params:
+        if param[1] == 'non-array':
+            global_variable_set.add(param[0])
+    bb_operands_list = []
+    for bb in self.basicBlocks.values():
+        bb_operands_list.append(bb.get_bb_operands())
+    L = len(bb_operands_list)
+    for i in range(L):
+        for j in range(i+1,L):
+            global_variable_set = global_variable_set | (bb_operands_list[i]&bb_operands_list[j])
+    removal_list = []
+    for v in global_variable_set:
+        if v.isdigit():
+            removal_list.append(v)
+    for v in removal_list:
+        global_variable_set.remove(v)
+    return global_variable_set
+
+def get_local_variable_liveness(self):
+    # print("Getting Local Variable Liveness:")
+    live_local_variables = {}
+
+    input_variables, output_variables = self.get_input_output_variables()
+    global_variable_set = self.get_global_variables()
+
+    self.scheduleASAP()
+    # if not self.schedule:
+    #     raise ValueError("Schedule is not generated. Ensure that scheduleASAP() is called and works correctly.")
+    
+    for bb_label, bb in self.basicBlocks.items():
+        bb_live_local_variables = []
         
-        参数：
-            cdfg: CDFG对象
-            
-        返回：
-            global_live_ranges: 全局变量的生命周期
-            global_live_vars: 全局活跃变量信息
-        """
-        # 获取全局变量
-        global_vars = self.analyze_global_variables(cdfg)
-        
-        # 构建控制流图中基本块的执行顺序（简化版本）
-        block_order = []
-        visited = set()
-        
-        # 简单DFS以获取基本块顺序
-        def dfs(bb_label):
-            if bb_label in visited:
-                return
-            
-            visited.add(bb_label)
-            block_order.append(bb_label)
-            
-            # 遍历后继基本块
-            for _, next_bb in cdfg.cfg.edges(bb_label):
-                dfs(next_bb)
-        
-        # 从入口基本块开始DFS
-        entry_blocks = [bb for bb in cdfg.basicBlocks if not list(cdfg.cfg.predecessors(bb))]
-        for entry in entry_blocks or list(cdfg.basicBlocks.keys())[:1]:  # 如果没有明确的入口基本块，使用第一个基本块
-            dfs(entry)
-        
-        # 为每个基本块分配一个全局时间戳范围
-        block_timestamps = {}
-        current_time = 0
-        
-        for bb_label in block_order:
-            if bb_label in cdfg.schedule:
-                block_len = sum(len(cycle) for cycle in cdfg.schedule[bb_label])
-                block_timestamps[bb_label] = (current_time, current_time + block_len - 1)
-                current_time += block_len
-        
-        # 构建全局变量的生命周期
-        global_live_ranges = {}
-        for var in global_vars:
-            # 确定变量的定义点
-            def_block = self.global_var_def.get(var)
-            if not def_block:
-                continue
-                
-            # 定义点时间戳
-            if def_block in block_timestamps:
-                def_time = block_timestamps[def_block][0]
+        cycle_live_local_variables = input_variables.get(bb_label, set()) - global_variable_set
+        bb_live_local_variables.append(cycle_live_local_variables)
+        for cycle in range(len(self.schedule[bb_label])):
+            ops = self.schedule[bb_label][cycle]
+            cycle_operands = set()
+            cycle_left_values = set()
+            for op, _ in ops:
+                operands = get_op_operands(bb.ops[op])
+                if operands:
+                    cycle_operands = cycle_operands | operands
+                left_value = get_op_left_values(bb.ops[op])
+                if left_value:
+                    cycle_left_values = cycle_left_values | {left_value}
+            if cycle_left_values:
+                cycle_live_local_variables = (((cycle_live_local_variables - (cycle_operands-output_variables[bb_label])))|cycle_left_values) - global_variable_set
             else:
+                cycle_live_local_variables = ((cycle_live_local_variables - (cycle_operands-output_variables[bb_label]))) - global_variable_set
+
+            bb_live_local_variables.append(cycle_live_local_variables)
+        live_local_variables[bb_label] = bb_live_local_variables
+        # print(bb_label,":",bb_live_local_variables)
+
+        # print(f"Basic block {bb_label}:")
+    # print(35 * "-")
+    # print(live_local_variables)
+    return live_local_variables
+
+def get_living_period(self):
+    live_local_variables = self.get_local_variable_liveness()
+    # print("Getting Living Period:")
+    living_period = {}
+    for bb_label, bb in self.basicBlocks.items():
+        bb_live_local_variables = live_local_variables[bb_label]
+        bb_live_period = {}
+        for i, cycle in enumerate(bb_live_local_variables):
+            for v in cycle:
+                if v not in bb_live_period:
+                    bb_live_period[v] = [i,i]
+                else:
+                    bb_live_period[v][1] = i
+        living_period[bb_label]=bb_live_period
+        # print(bb_label, ":", bb_live_period)
+        # print(f"Basic block {bb_label}")
+    # print(35 * "-")
+    return living_period
+
+def register_coloring(self):
+    # 获取变量生存周期
+    living_period = self.get_living_period()
+    coloring_result = {}
+    # print("Coloring Registers:")
+    # print("Coloring Result BEFORE Aligning:")
+
+    for bb_label, bb in self.basicBlocks.items():
+        bb_coloring_result ={}
+        # 将该块内局部变量初始化为未染色
+        uncolored = list(living_period[bb_label].keys())
+        uncolored.sort(key = lambda x:(living_period[bb_label][x][0],(living_period[bb_label][x][1]-living_period[bb_label][x][0]),x))
+
+        color = 0
+        while uncolored:
+            colored_var_list = []
+            right_edge = -1
+            for v in uncolored:
+                if living_period[bb_label][v][0] > right_edge:
+                    # 在该颜色的列表中加上该变量及其存活周期
+                    colored_var_list.append((v,living_period[bb_label][v]))
+                    # 更新右边沿
+                    right_edge = living_period[bb_label][v][1]
+            bb_coloring_result[color] = colored_var_list
+            color += 1
+            for v,_ in colored_var_list:
+                # 更新染色状态
+                uncolored.remove(v)
+        coloring_result[bb_label] = bb_coloring_result
+        #print(bb_label,":",bb_coloring_result)
+
+    min_register_required = 0
+    for bb_label in self.cfg:
+        min_register_required = max(len(coloring_result[bb_label]),min_register_required)
+    for bb_label in self.cfg:
+        if min_register_required > len(coloring_result[bb_label]):
+            for reg in range(len(coloring_result[bb_label]),min_register_required):
+                coloring_result[bb_label][reg] = []
+    # for bb_label in self.cfg:
+    #     print(bb_label,":",coloring_result[bb_label])
+    # print(35 * "-")
+    
+    input_variables, output_variables = self.get_input_output_variables()
+    global_variables = self.get_global_variables()
+    # cfg_adj_list = self.cfg
+    # for src_label in cfg_adj_list:
+    #     for sink_label, _ in cfg_adj_list[src_label]:
+    for src_label, sink_label, _ in self.cfg.edges(data=True):
+        src_coloring = coloring_result[src_label]
+        sink_coloring = coloring_result[sink_label]
+        #print(src_label,sink_label,":")
+
+        checklist = list((output_variables[src_label] & input_variables[sink_label]) - global_variables)
+        var_check_liveness = {}
+        for var_check in checklist:
+            for reg in src_coloring.values():
+                if reg:
+                    if reg[-1][0] == var_check:
+                        var_check_liveness[var_check] = reg[-1][-1][-1]-reg[-1][-1][0]
+        checklist.sort(key=lambda x:(-var_check_liveness[x]))
+
+        #print(checklist)
+        src_reg = -1
+        sink_reg = -1
+        for var_check in checklist:
+            flag = 0
+            for reg, var_list in src_coloring.items():
+                if var_list:
+                    if var_list[-1][0] == var_check:
+                        src_reg = reg
+                        flag = 1
+                        break
+                if flag:
+                    break
+            flag = 0
+            for reg, var_list in sink_coloring.items():
+                if var_list:
+                    if var_list[0][0] == var_check:
+                        sink_reg = reg
+                        flag = 1
+                        break
+                if flag:
+                    break
+            if src_reg == sink_reg:
                 continue
-            
-            # 确定最后使用点
-            last_use_time = def_time
-            for use_block in self.global_var_uses.get(var, []):
-                if use_block in block_timestamps:
-                    last_use_time = max(last_use_time, block_timestamps[use_block][1])
-            
-            # 记录全局生命周期
-            global_live_ranges[var] = (def_time, last_use_time)
-        
-        # 构建全局活跃变量信息
-        global_live_vars = defaultdict(set)
-        for var, (start, end) in global_live_ranges.items():
-            for time in range(start, end + 1):
-                global_live_vars[time].add(var)
-        
-        return global_live_ranges, global_live_vars
-
-    def build_liveness_info(self, bb, schedule):
-        """构建局部变量的生命周期信息（与原代码相同）"""
-        # ... [保持原有代码不变] ...
-        # 这里假设原函数已经实现，不再重复列出
-        var_def = {}
-        var_uses = defaultdict(list)
-        max_cycle = len(schedule) - 1
-        
-        for cycle, ops in enumerate(schedule):
-            for op_idx, _ in ops:
-                operation = bb.ops[op_idx]
-                result_var = operation[0]
-                operands = operation[2:]
-                
-                if result_var:
-                    var_def[result_var] = cycle
-                
-                for var in operands:
-                    if isinstance(var, str) and not var.isdigit() and var:
-                        var_uses[var].append(cycle)
-        
-        live_ranges = {}
-        for var in set(list(var_def.keys()) + list(var_uses.keys())):
-            if var in var_def:
-                def_point = var_def[var]
-                last_use = max(var_uses.get(var, [def_point])) if var in var_uses else max_cycle
-                live_ranges[var] = (def_point, last_use)
-        
-        live_vars = defaultdict(set)
-        for var, (start, end) in live_ranges.items():
-            for cycle in range(start, end + 1):
-                live_vars[cycle].add(var)
-        
-        return live_ranges, live_vars
-
-    def build_unified_interference_graph(self, cdfg):
-        """
-        构建统一的冲突图，包含全局变量和局部变量
-        
-        参数：
-            cdfg: CDFG对象
-        
-        返回：
-            interference_graph: 统一的冲突图
-        """
-        # 重置冲突图
-        self.interference_graph.clear()
-        self.variable_map = {}
-        
-        # 构建全局活跃变量信息
-        global_live_ranges, global_live_vars = self.build_global_liveness_info(cdfg)
-        
-        # 添加全局变量节点
-        var_idx = 0
-        for var in global_live_ranges:
-            self.variable_map[var] = var_idx
-            self.interference_graph.add_node(var_idx, name=var, is_global=True)
-            var_idx += 1
-        
-        # 添加全局变量之间的冲突边
-        for time, vars_set in global_live_vars.items():
-            vars_list = list(vars_set)
-            for i in range(len(vars_list)):
-                for j in range(i + 1, len(vars_list)):
-                    var1 = vars_list[i]
-                    var2 = vars_list[j]
-                    if var1 in self.variable_map and var2 in self.variable_map:
-                        self.interference_graph.add_edge(
-                            self.variable_map[var1], 
-                            self.variable_map[var2],
-                            reason="global_conflict"
-                        )
-        
-        # 处理每个基本块的局部变量
-        for bb_label, bb in cdfg.basicBlocks.items():
-            # 跳过没有调度信息的基本块
-            if bb_label not in cdfg.schedule:
-                continue
-                
-            # 构建局部活跃变量信息
-            _, local_live_vars = self.build_liveness_info(bb, cdfg.schedule[bb_label])
-            
-            # 添加局部变量节点（如果还未添加）
-            for cycle, vars_set in local_live_vars.items():
-                for var in vars_set:
-                    if var not in self.variable_map:
-                        self.variable_map[var] = var_idx
-                        self.interference_graph.add_node(var_idx, name=var, is_global=False)
-                        var_idx += 1
-            
-            # 添加局部变量之间的冲突边
-            for cycle, vars_set in local_live_vars.items():
-                vars_list = list(vars_set)
-                for i in range(len(vars_list)):
-                    for j in range(i + 1, len(vars_list)):
-                        var1 = vars_list[i]
-                        var2 = vars_list[j]
-                        if var1 in self.variable_map and var2 in self.variable_map:
-                            self.interference_graph.add_edge(
-                                self.variable_map[var1],
-                                self.variable_map[var2],
-                                reason=f"local_conflict_in_{bb_label}"
-                            )
-            
-            # 添加局部变量与全局变量之间的冲突
-            for cycle, local_vars in local_live_vars.items():
-                for local_var in local_vars:
-                    # 只处理非全局的局部变量
-                    if local_var in self.variable_map and not self.interference_graph.nodes[self.variable_map[local_var]].get('is_global', False):
-                        for global_var, (start, end) in global_live_ranges.items():
-                            # 如果全局变量在当前周期活跃，创建冲突边
-                            if global_var in self.variable_map and global_var != local_var:
-                                self.interference_graph.add_edge(
-                                    self.variable_map[local_var],
-                                    self.variable_map[global_var],
-                                    reason=f"local_global_conflict_in_{bb_label}"
-                                )
-        
-        return self.interference_graph
-
-    def color_graph(self):
-        """使用贪心算法为冲突图着色（与原代码相同）"""
-        # ... [保持原有代码不变] ...
-        sorted_nodes = sorted(
-            self.interference_graph.nodes(), 
-            key=lambda x: self.interference_graph.degree(x), # type: ignore
-            reverse=True
-        )
-        
-        coloring = {}
-        
-        for node in sorted_nodes:
-            # 获取邻居已使用的颜色
-            neighbor_colors = set()
-            for neighbor in self.interference_graph.neighbors(node):
-                if neighbor in coloring:
-                    neighbor_colors.add(coloring[neighbor])
-            
-            # 查找可用的颜色
-            color = 0
-            while color < self.num_registers and color in neighbor_colors:
-                color += 1
-            
-            # 分配颜色或标记为溢出
-            if color < self.num_registers:
-                coloring[node] = color
             else:
-                # 这个节点无法着色，需要溢出
-                return False, coloring
-        
-        return True, coloring
+                settled = 0
+                src_var = src_coloring[src_reg][-1]
+                if src_coloring[sink_reg]:
+                    right_edge = src_coloring[sink_reg][-1][-1][-1]
+                else:
+                    right_edge = -1
+                if src_var[-1][0] > right_edge:
+                    src_coloring[sink_reg].append(src_var)
+                    src_coloring[src_reg].pop()
+                    settled = 1
+                if not settled:
+                    if (len(src_coloring[src_reg])>1):
+                        src_right_edge = src_coloring[src_reg][-2][-1][-1]
+                    else:
+                        src_right_edge = -1
+                    if (len(src_coloring[sink_reg])>1):
+                        sink_right_edge = src_coloring[sink_reg][-2][-1][-1]
+                    else:
+                        sink_right_edge = -1
+                    if src_coloring[sink_reg][-1][-1][0] > src_right_edge and src_var[-1][0] > sink_right_edge:
+                        temp0 = src_coloring[src_reg].pop()
+                        temp1 = src_coloring[sink_reg].pop()
+                        src_coloring[src_reg].append(temp1)
+                        src_coloring[sink_reg].append(temp0)
+                        settled = 1
 
-    def select_spill_candidates(self):
-        """选择需要溢出的变量（与原代码相同）"""
-        # ... [保持原有代码不变] ...
-        sorted_nodes = sorted(
-            self.interference_graph.nodes(), 
-            key=lambda x: self.interference_graph.degree(x), # type: ignore
-            reverse=True
-        )
-        
-        # 选择前10%的高度数节点作为候选
-        spill_candidates = sorted_nodes[:max(1, len(sorted_nodes) // 10)]
-        
-        # 找出冲突最严重的节点
-        spill_node = spill_candidates[0]
-        
-        return [spill_node]
+                if not settled:
+                    sink_var = sink_coloring[sink_reg][0]
+                    if sink_coloring[src_reg]:
+                        left_edge = sink_coloring[src_reg][0][-1][0]
+                    else:
+                        left_edge = sys.maxsize
+                    if sink_var[-1][1] < left_edge:
+                        sink_coloring[src_reg].insert(0,sink_var)
+                        settled = 1
+                '''
+                if not settled:
+                    if (len(sink_coloring[sink_reg])>1):
+                        sink_left_edge = sink_coloring[sink_reg][1][-1][0]
+                    else:
+                        sink_left_edge = sys.maxsize
+                    if (len(sink_coloring[src_reg])>1):
+                        src_left_edge = sink_coloring[src_reg][1][-1][0]
+                    else:
+                        src_left_edge = sys.maxsize
+                    if sink_coloring[src_reg][0][-1][-1] < sink_left_edge and sink_var[-1][-1] < src_left_edge: # type: ignore
+                        temp0 = sink_coloring[src_reg].pop(0)
+                        temp1 = sink_coloring[sink_reg].pop(0)
+                        sink_coloring[src_reg].insert(0,temp1)
+                        sink_coloring[sink_reg].insert(0,temp0)
+                        settled = 1
+                '''
 
-    def allocate_registers_for_cdfg(self, cdfg):
-        """
-        为整个CDFG统一分配寄存器，考虑全局变量
-        
-        参数：
-            cdfg: CDFG对象
-            
-        返回：
-            cdfg: 添加寄存器分配结果的CDFG对象
-        """
-        # 为CDFG添加寄存器分配结果属性
-        if not hasattr(cdfg, 'register_allocation'):
-            cdfg.register_allocation = {}
-            cdfg.global_register_map = {}
-        
-        # 构建统一的冲突图
-        self.build_unified_interference_graph(cdfg)
-        
-        # 尝试着色
-        success, coloring = self.color_graph()
-        
-        # 处理变量溢出
-        self.spilled_vars = []
-        while not success:
-            spill_nodes = self.select_spill_candidates()
-            self.spilled_vars.extend([self.interference_graph.nodes[node]['name'] for node in spill_nodes])
-            
-            # 从图中移除溢出变量
-            self.interference_graph.remove_nodes_from(spill_nodes)
-            
-            # 重新尝试着色
-            success, coloring = self.color_graph()
-        
-        # 构建全局变量到寄存器的映射
-        global_register_map = {}
-        for node, color in coloring.items():
-            var_name = self.interference_graph.nodes[node]['name']
-            is_global = self.interference_graph.nodes[node].get('is_global', False)
-            
-            if is_global:
-                global_register_map[var_name] = f"r{color}"
-        
-        # 为每个基本块分配寄存器
-        for bb_label, bb in cdfg.basicBlocks.items():
-            if bb_label not in cdfg.schedule:
-                continue
-                
-            # 将全局变量的寄存器分配应用到当前基本块
-            register_map = dict(global_register_map)
-            
-            # 为局部变量分配寄存器
-            for node, color in coloring.items():
-                var_name = self.interference_graph.nodes[node]['name']
-                is_global = self.interference_graph.nodes[node].get('is_global', False)
-                
-                # 检查该变量是否在当前基本块中使用
-                is_used_in_block = False
-                for ops in cdfg.schedule[bb_label]:
-                    for op_idx, _ in ops:
-                        operation = bb.ops[op_idx]
-                        if var_name == operation[0] or var_name in operation[2:]:
-                            is_used_in_block = True
-                            break
-                
-                if not is_global and is_used_in_block:
-                    register_map[var_name] = f"r{color}"
-            
-            # 记录寄存器分配结果
-            cdfg.register_allocation[bb_label] = {
-                'register_map': register_map,
-                'spilled_vars': [var for var in self.spilled_vars if var in register_map]
-            }
-        
-        # 保存全局寄存器映射
-        cdfg.global_register_map = global_register_map
-        
-        return cdfg
+                if not settled:
+                    sink_var = sink_coloring[sink_reg][0]
+                    for i in range(0,min_register_required):
+                        if src_coloring[i]:
+                            src_right_edge = src_coloring[i][-1][-1][-1]
+                        else:
+                            src_right_edge = -1
+                        if sink_coloring[i]:
+                            sink_left_edge = sink_coloring[i][0][-1][0]
+                        else:
+                            sink_left_edge = sys.maxsize
+                        if src_var[-1][0] > src_right_edge and sink_var[-1][-1] < sink_left_edge:
+                            src_coloring[src_reg].pop()
+                            sink_coloring[sink_reg].pop(0)
+                        if src_var[-1][0] > src_right_edge and sink_var[-1][-1] < sink_left_edge: # type: ignore
+                            src_coloring[i].append(src_var)
+                            sink_coloring[i].insert(0,sink_var)
 
-def addRegisterAllocator(classObj):
-    """
-    将寄存器分配功能添加到CDFG类
+                            settled = 1
+                    if not settled:
+                        src_coloring[src_reg].pop()
+                        sink_coloring[sink_reg].pop(0)
+                        src_coloring[min_register_required]=[src_var]
+                        sink_coloring[min_register_required]=[sink_var]
+                        min_register_required += 1
+                        for bb_label in self.cfg:
+                            if min_register_required > len(coloring_result[bb_label]):
+                                for reg in range(len(coloring_result[bb_label]),min_register_required):
+                                    coloring_result[bb_label][reg] = []
+    # print("Coloring Result AFTER Aligning")
+    # for bb_label in self.cfg:
+    #     print(bb_label,":",coloring_result[bb_label])    
+    # print(35 * "-")     
+    return coloring_result
     
-    参数：
-        classObj: 要添加功能的类（CDFG）
-    """
-    def allocate_registers(self, num_registers=8):
-        """
-        使用图着色法为CDFG中的变量分配寄存器，支持跨基本块变量
-        
-        参数：
-            num_registers: 可用的寄存器数量
-            
-        返回：
-            self: CDFG对象
-        """
-        allocator = RegisterAllocator(num_registers)
-        allocator.allocate_registers_for_cdfg(self)
-        return self
-    
-    # 添加寄存器分配方法到CDFG类
-    setattr(classObj, 'allocate_registers', allocate_registers)
 
-def registerAllocationPrinter(cdfg, file=None):
+def printInputVariables(input_variables, file=None):
     """
-    打印寄存器分配结果，包括全局变量分配
-    
-    参数：
-        cdfg: CDFG对象
-        file: 输出文件对象
+        Print input variables information.
     """
-    if not hasattr(cdfg, 'register_allocation'):
-        print("尚未进行寄存器分配", file=file)
-        return
+    # print(35 * "-")
+    print("Input variables:", file=file)
+    # print(input_variables)
+    for block_label, variables in input_variables.items():
+        print(f"Basic block {block_label}:", file=file)
+        if not variables:
+            print(f"No input variables in this block.", end="  ", file=file)
+        else:
+            for variable in variables:
+                print(f"{variable}", end="  ", file=file)
+        print(file=file)
+    print(35 * "-", file=file)
+
+def printOutputVariables(output_variables, file=None):
+    """
+        Print output variables information.
+    """
+    print("Output variables:", file=file)
+    # print(output_variables)
+    for block_label, variables in output_variables.items():
+        print(f"Basic block {block_label}:", file=file)
+        if not variables:
+            print(f"No output variables in this block.", end="  ", file=file)
+        else:
+            for variable in variables:
+                print(f"{variable}", end="  ", file=file)
+        print(file=file)
+    print(35 * "-", file=file)
+
+def printGlobalVariables(global_variable_set, file=None):
+    """
+        Print global variables information.
+    """
+    print("Global Variables:", file=file)
+    # print(global_variable_set)
+    if global_variable_set:
+        print("  ".join(global_variable_set), file=file)
+    else:
+        print("No global variables", file=file)
+    print(35 * "-", file=file)
+
+def printLocalVariablesLivenessCycle(live_local_variables, file=None):
+    """
+        Print local variable liveness, in cycle order.
+    """
+    print("Getting Local Variable Liveness:", file=file)
+    # print(live_local_variables)
+    for bb_label, bb_live_local_variables in live_local_variables.items():
+        print(f"Basic block {bb_label}: ", file=file)
+        # print(bb_live_local_variables, file=file)
+        for cycle, variable in enumerate(bb_live_local_variables):
+            result = ', '.join(variable)
+            if not result:
+                print(f"  cycle {cycle}, there's no variable living in this cycle.", file=file)
+            else:
+                print(f"  cycle {cycle}, variable\t{result}\tis living.", file=file)
+    print(35 * "-", file=file)
+    # print(live_local_variables, file=file)
+
+def printLocalVariablesLivenessVariable(living_period, file=None):
+    """
+        Print local variable liveness, in variable order.
+    """
+    print("Getting Living Period for every local variable:", file=file)
+    # print(living_period)
+    for bb_label, bb_variable_liveness in living_period.items():
+        print(f"Basic block {bb_label}: ", file=file)
+        if not bb_variable_liveness:
+            print(f"  No variable living in this basic block.", file=file)
+        else:
+            for variable, var_living_period in bb_variable_liveness.items():
+                print(f"  Variable\t{variable}\tlives from cycle {var_living_period[0]} to cycle {var_living_period[1]}", file=file)
+    print(35 * "-", file=file)
+
+def printRegisterColoring(coloring_result, file=None):
+    """
+        Print register allocation result after aligning, using left-edge algorithm.    
+    """
+    print("Coloring Register by using Left-Edge Algorithm, after Aligning:", file=file)
+    # print(coloring_result)
+    for bb_label, bb_reg_dict in coloring_result.items():
+        print(f"Basic block {bb_label}: ", file=file)
+        for bb_reg_index, bb_reg_allocation in bb_reg_dict.items():
+            print(f"  Register {bb_reg_index}:", file=file)
+            for bb_reg_allocation_items in bb_reg_allocation:
+                start_cycle = bb_reg_allocation_items[1][0]
+                end_cycle = bb_reg_allocation_items[1][1]
+                print(f"    stores variable\t{bb_reg_allocation_items[0]}\tfrom cycle {start_cycle} to cycle {end_cycle}", file=file)
     
-    print("\n===== 寄存器分配结果 =====", file=file)
+    print(35 * "-", file=file)
+
+def addRegisterAllocation(cdfg_obj, basic_block_obj):
+    setattr(basic_block_obj, 'get_bb_operands', {})
+    setattr(basic_block_obj, 'get_bb_operands', get_bb_operands)
+    setattr(basic_block_obj, 'get_bb_left_values', {})
+    setattr(basic_block_obj, 'get_bb_left_values', get_bb_left_values)
+    setattr(cdfg_obj, 'get_input_output_variables', {})
+    setattr(cdfg_obj, 'get_input_output_variables', get_input_output_variables)
+    setattr(cdfg_obj, 'get_global_variables', {})
+    setattr(cdfg_obj, 'get_global_variables', get_global_variables)
+    setattr(cdfg_obj, 'get_local_variable_liveness', {})
+    setattr(cdfg_obj, 'get_local_variable_liveness', get_local_variable_liveness)
+    setattr(cdfg_obj, 'get_living_period', {})
+    setattr(cdfg_obj, 'get_living_period', get_living_period)
+    setattr(cdfg_obj, 'register_coloring', {})
+    setattr(cdfg_obj, 'register_coloring', register_coloring)
+
+def registerAllocatorPrinter(input_variables, output_variables, global_variable_set, live_local_variables, living_period, coloring_result, file=None):
+    printInputVariables(input_variables, file)
+    printOutputVariables(output_variables, file)
+    printGlobalVariables(global_variable_set, file)
+    printLocalVariablesLivenessCycle(live_local_variables, file)
+    printLocalVariablesLivenessVariable(living_period, file)
+    printRegisterColoring(coloring_result, file)
+
+# if __name__ == "__main__":
+#     cdfg = CDFG()
+#     cdfg.llvmParser("parse_result")
+
+#     cdfg.generateCFG()
+#     cdfg.generateDFGs()
+
+#     addScheduler(CDFG)
+#     cdfg.scheduleASAP()
+#     schedulePrinter(cdfg)
+
+#     addRegisterAllocation(CDFG, BasicBlock)
+
+#     input_variables, output_variables = cdfg.get_input_output_variables()
+#     printInputVariables(input_variables=input_variables)
+#     printOutputVariables(output_variables=output_variables)
     
-    # 打印全局变量的寄存器分配
-    if hasattr(cdfg, 'global_register_map') and cdfg.global_register_map:
-        print("全局变量寄存器分配:", file=file)
-        for var, reg in sorted(cdfg.global_register_map.items()):
-            print(f"  {var} -> {reg}", file=file)
-        print("", file=file)
+#     global_variable_set = cdfg.get_global_variables()
+#     printGlobalVariables(global_variable_set=global_variable_set)
+
+#     live_local_variables = cdfg.get_local_variable_liveness()
+#     printLocalVariablesLivenessCycle(live_local_variables=live_local_variables)
+
+#     living_period = cdfg.get_living_period()
+#     printLocalVariablesLivenessVariable(living_period=living_period)
     
-    # 打印各基本块的寄存器分配
-    for bb_label, allocation in cdfg.register_allocation.items():
-        print(f"基本块 {bb_label}:", file=file)
-        
-        register_map = allocation['register_map']
-        spilled_vars = allocation['spilled_vars']
-        
-        # 打印寄存器分配
-        print("  变量到寄存器的映射:", file=file)
-        for var, reg in sorted(register_map.items()):
-            print(f"    {var} -> {reg}", file=file)
-        
-        # 打印溢出变量
-        if spilled_vars:
-            print("  溢出到内存的变量:", file=file)
-            for var in spilled_vars:
-                print(f"    {var}", file=file)
-    
-    print("========================\n", file=file)
+#     coloring_result = cdfg.register_coloring()
+#     printRegisterColoring(coloring_result=coloring_result)
+
