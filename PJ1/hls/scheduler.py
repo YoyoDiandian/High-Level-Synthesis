@@ -241,17 +241,17 @@ def scheduleASAP(self):
 
 def printSchedule(schedule):
     """
-    打印调度结果。
+    Print schedule results.
     """
-    print("\n===== 调度结果 =====")
+    print("Schedule results:")
     for bbLabel, cycles in schedule.items():
-        print(f"基本块 {bbLabel} 的调度结果:")
+        print(f"Basic block {bbLabel}'s schedule results:")
         for cycle_idx, ops in enumerate(cycles):
-            print(f"  周期 {cycle_idx}: ", end="")
+            print(f"  cycle {cycle_idx}: ", end="")
             for op_idx, device_idx in ops:
-                print(f"(操作 {op_idx}, 设备 {device_idx}) ", end="")
+                print(f"(operation {op_idx}, resource {device_idx}) ", end="")
             print()
-    print("=====================\n")
+    print(35 * "-")
 
 def addScheduler(classObj):
     setattr(classObj, 'schedule', {})

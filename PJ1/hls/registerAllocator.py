@@ -1,5 +1,5 @@
-from scheduler import printSchedule
-from scheduler2 import * 
+from scheduler import scheduleASAP, printSchedule, addScheduler
+from cdfgGenerator import BasicBlock, CDFG
 import sys
 
 def get_op_operands(op):
@@ -43,25 +43,26 @@ def get_bb_left_values(self):
     return left_values
 
 def get_input_output_variables(self):
-    param_list = []
-    for param in self.params:
-        param_list.append(param[0])
+    param_list = [param[0] for param in self.params]
+    # for param in self.params:
+    #     param_list.append(param[0])
     input_variables = {}
     output_variables = {}
     require_variables = {}
     visited = {}
-    for bb in self.cfg:
+
+    for bb in self.basicBlocks:
         visited[bb] = 0
         input_variables[bb] = set()
-        require_variables[bb] = self.cfg[bb].get_bb_operands()-self.cfg[bb].get_bb_left_values()
+        require_variables[bb] = self.basicBlocks[bb].get_bb_operands()-self.basicBlocks[bb].get_bb_left_values()
     bb_queue = ['0']
     visited['0'] = 1
     while bb_queue:
         bb = bb_queue.pop(0)
-        output_variables[bb] = (input_variables[bb] | self.cfg[bb].get_bb_left_values())-self.cfg[bb].get_bb_operands()
-        for edge in self.cfg_adj_list[bb]:
-            next_bb = edge[0]
-            input_variables[next_bb] = input_variables[next_bb]|output_variables[bb]
+        output_variables[bb] = (input_variables[bb] | self.basicBlocks[bb].get_bb_left_values())-self.basicBlocks[bb].get_bb_operands()
+        for edge in self.cfg.successors(bb):
+            next_bb = edge
+            input_variables[next_bb] = input_variables[next_bb] | output_variables[bb]
             if visited[next_bb] == 0:
                 visited[next_bb] = 1
                 bb_queue.append(next_bb)
@@ -92,7 +93,7 @@ def get_global_variables(self):
         if param[1] == 'non-array':
             global_variable_set.add(param[0])
     bb_operands_list = []
-    for bb in self.cfg.values():
+    for bb in self.basicBlocks.values():
         bb_operands_list.append(bb.get_bb_operands())
     L = len(bb_operands_list)
     for i in range(L):
@@ -109,15 +110,21 @@ def get_global_variables(self):
 def get_local_variable_liveness(self):
     # print("Getting Local Variable Liveness:")
     live_local_variables = {}
+
     input_variables, output_variables = self.get_input_output_variables()
     global_variable_set = self.get_global_variables()
-    schedule = self.schedule_asap()
-    for bb_label, bb in self.cfg.items():
+
+    self.scheduleASAP()
+    # if not self.schedule:
+    #     raise ValueError("Schedule is not generated. Ensure that scheduleASAP() is called and works correctly.")
+    
+    for bb_label, bb in self.basicBlocks.items():
         bb_live_local_variables = []
-        cycle_live_local_variables = input_variables[bb_label] - global_variable_set
+        
+        cycle_live_local_variables = input_variables.get(bb_label, set()) - global_variable_set
         bb_live_local_variables.append(cycle_live_local_variables)
-        for cycle in range(len(schedule[bb_label])):
-            ops = schedule[bb_label][cycle]
+        for cycle in range(len(self.schedule[bb_label])):
+            ops = self.schedule[bb_label][cycle]
             cycle_operands = set()
             cycle_left_values = set()
             for op, _ in ops:
@@ -145,7 +152,7 @@ def get_living_period(self):
     live_local_variables = self.get_local_variable_liveness()
     # print("Getting Living Period:")
     living_period = {}
-    for bb_label, bb in self.cfg.items():
+    for bb_label, bb in self.basicBlocks.items():
         bb_live_local_variables = live_local_variables[bb_label]
         bb_live_period = {}
         for i, cycle in enumerate(bb_live_local_variables):
@@ -166,12 +173,13 @@ def register_coloring(self):
     coloring_result = {}
     # print("Coloring Registers:")
     # print("Coloring Result BEFORE Aligning:")
-    for bb_label, bb in self.cfg.items():
+
+    for bb_label, bb in self.basicBlocks.items():
         bb_coloring_result ={}
         # 将该块内局部变量初始化为未染色
         uncolored = list(living_period[bb_label].keys())
         uncolored.sort(key = lambda x:(living_period[bb_label][x][0],(living_period[bb_label][x][1]-living_period[bb_label][x][0]),x))
-        # 颜色0
+
         color = 0
         while uncolored:
             colored_var_list = []
@@ -189,6 +197,7 @@ def register_coloring(self):
                 uncolored.remove(v)
         coloring_result[bb_label] = bb_coloring_result
         #print(bb_label,":",bb_coloring_result)
+
     min_register_required = 0
     for bb_label in self.cfg:
         min_register_required = max(len(coloring_result[bb_label]),min_register_required)
@@ -202,128 +211,130 @@ def register_coloring(self):
     
     input_variables, output_variables = self.get_input_output_variables()
     global_variables = self.get_global_variables()
-    cfg_adj_list = self.cfg_adj_list
-    for src_label in cfg_adj_list:
-        for sink_label,_ in cfg_adj_list[src_label]:
-            src_coloring = coloring_result[src_label]
-            sink_coloring = coloring_result[sink_label]
-            #print(src_label,sink_label,":")
-            checklist = list((output_variables[src_label] & input_variables[sink_label]) - global_variables)
-            var_check_liveness = {}
-            for var_check in checklist:
-                for reg in src_coloring.values():
-                    if reg:
-                        if reg[-1][0] == var_check:
-                            var_check_liveness[var_check] = reg[-1][-1][-1]-reg[-1][-1][0]
-            checklist.sort(key=lambda x:(-var_check_liveness[x]))
+    # cfg_adj_list = self.cfg
+    # for src_label in cfg_adj_list:
+    #     for sink_label, _ in cfg_adj_list[src_label]:
+    for src_label, sink_label, _ in self.cfg.edges(data=True):
+        src_coloring = coloring_result[src_label]
+        sink_coloring = coloring_result[sink_label]
+        #print(src_label,sink_label,":")
 
-            #print(checklist)
-            src_reg = -1
-            sink_reg = -1
-            for var_check in checklist:
-                flag = 0
-                for reg, var_list in src_coloring.items():
-                    if var_list:
-                        if var_list[-1][0] == var_check:
-                            src_reg = reg
-                            flag = 1
-                            break
-                    if flag:
+        checklist = list((output_variables[src_label] & input_variables[sink_label]) - global_variables)
+        var_check_liveness = {}
+        for var_check in checklist:
+            for reg in src_coloring.values():
+                if reg:
+                    if reg[-1][0] == var_check:
+                        var_check_liveness[var_check] = reg[-1][-1][-1]-reg[-1][-1][0]
+        checklist.sort(key=lambda x:(-var_check_liveness[x]))
+
+        #print(checklist)
+        src_reg = -1
+        sink_reg = -1
+        for var_check in checklist:
+            flag = 0
+            for reg, var_list in src_coloring.items():
+                if var_list:
+                    if var_list[-1][0] == var_check:
+                        src_reg = reg
+                        flag = 1
                         break
-                flag = 0
-                for reg, var_list in sink_coloring.items():
-                    if var_list:
-                        if var_list[0][0] == var_check:
-                            sink_reg = reg
-                            flag = 1
-                            break
-                    if flag:
+                if flag:
+                    break
+            flag = 0
+            for reg, var_list in sink_coloring.items():
+                if var_list:
+                    if var_list[0][0] == var_check:
+                        sink_reg = reg
+                        flag = 1
                         break
-                if src_reg == sink_reg:
-                    continue
+                if flag:
+                    break
+            if src_reg == sink_reg:
+                continue
+            else:
+                settled = 0
+                src_var = src_coloring[src_reg][-1]
+                if src_coloring[sink_reg]:
+                    right_edge = src_coloring[sink_reg][-1][-1][-1]
                 else:
-                    settled = 0
-                    src_var = src_coloring[src_reg][-1]
-                    if src_coloring[sink_reg]:
-                        right_edge = src_coloring[sink_reg][-1][-1][-1]
+                    right_edge = -1
+                if src_var[-1][0] > right_edge:
+                    src_coloring[sink_reg].append(src_var)
+                    src_coloring[src_reg].pop()
+                    settled = 1
+                if not settled:
+                    if (len(src_coloring[src_reg])>1):
+                        src_right_edge = src_coloring[src_reg][-2][-1][-1]
                     else:
-                        right_edge = -1
-                    if src_var[-1][0] > right_edge:
-                        src_coloring[sink_reg].append(src_var)
-                        src_coloring[src_reg].pop()
+                        src_right_edge = -1
+                    if (len(src_coloring[sink_reg])>1):
+                        sink_right_edge = src_coloring[sink_reg][-2][-1][-1]
+                    else:
+                        sink_right_edge = -1
+                    if src_coloring[sink_reg][-1][-1][0] > src_right_edge and src_var[-1][0] > sink_right_edge:
+                        temp0 = src_coloring[src_reg].pop()
+                        temp1 = src_coloring[sink_reg].pop()
+                        src_coloring[src_reg].append(temp1)
+                        src_coloring[sink_reg].append(temp0)
                         settled = 1
-                    if not settled:
-                        if (len(src_coloring[src_reg])>1):
-                            src_right_edge = src_coloring[src_reg][-2][-1][-1]
+
+                if not settled:
+                    sink_var = sink_coloring[sink_reg][0]
+                    if sink_coloring[src_reg]:
+                        left_edge = sink_coloring[src_reg][0][-1][0]
+                    else:
+                        left_edge = sys.maxsize
+                    if sink_var[-1][1] < left_edge:
+                        sink_coloring[src_reg].insert(0,sink_var)
+                        settled = 1
+                '''
+                if not settled:
+                    if (len(sink_coloring[sink_reg])>1):
+                        sink_left_edge = sink_coloring[sink_reg][1][-1][0]
+                    else:
+                        sink_left_edge = sys.maxsize
+                    if (len(sink_coloring[src_reg])>1):
+                        src_left_edge = sink_coloring[src_reg][1][-1][0]
+                    else:
+                        src_left_edge = sys.maxsize
+                    if sink_coloring[src_reg][0][-1][-1] < sink_left_edge and sink_var[-1][-1] < src_left_edge: # type: ignore
+                        temp0 = sink_coloring[src_reg].pop(0)
+                        temp1 = sink_coloring[sink_reg].pop(0)
+                        sink_coloring[src_reg].insert(0,temp1)
+                        sink_coloring[sink_reg].insert(0,temp0)
+                        settled = 1
+                '''
+
+                if not settled:
+                    sink_var = sink_coloring[sink_reg][0]
+                    for i in range(0,min_register_required):
+                        if src_coloring[i]:
+                            src_right_edge = src_coloring[i][-1][-1][-1]
                         else:
                             src_right_edge = -1
-                        if (len(src_coloring[sink_reg])>1):
-                            sink_right_edge = src_coloring[sink_reg][-2][-1][-1]
-                        else:
-                            sink_right_edge = -1
-                        if src_coloring[sink_reg][-1][-1][0] > src_right_edge and src_var[-1][0] > sink_right_edge:
-                            temp0 = src_coloring[src_reg].pop()
-                            temp1 = src_coloring[sink_reg].pop()
-                            src_coloring[src_reg].append(temp1)
-                            src_coloring[sink_reg].append(temp0)
-                            settled = 1
-
-                    if not settled:
-                        sink_var = sink_coloring[sink_reg][0]
-                        if sink_coloring[src_reg]:
-                            left_edge = sink_coloring[src_reg][0][-1][0]
-                        else:
-                            left_edge = sys.maxsize
-                        if sink_var[-1][1] < left_edge:
-                            sink_coloring[src_reg].insert(0,sink_var)
-                            settled = 1
-                    '''
-                    if not settled:
-                        if (len(sink_coloring[sink_reg])>1):
-                            sink_left_edge = sink_coloring[sink_reg][1][-1][0]
+                        if sink_coloring[i]:
+                            sink_left_edge = sink_coloring[i][0][-1][0]
                         else:
                             sink_left_edge = sys.maxsize
-                        if (len(sink_coloring[src_reg])>1):
-                            src_left_edge = sink_coloring[src_reg][1][-1][0]
-                        else:
-                            src_left_edge = sys.maxsize
-                        if sink_coloring[src_reg][0][-1][-1] < sink_left_edge and sink_var[-1][-1] < src_left_edge: # type: ignore
-                            temp0 = sink_coloring[src_reg].pop(0)
-                            temp1 = sink_coloring[sink_reg].pop(0)
-                            sink_coloring[src_reg].insert(0,temp1)
-                            sink_coloring[sink_reg].insert(0,temp0)
-                            settled = 1
-                    '''
-
-                    if not settled:
-                        sink_var = sink_coloring[sink_reg][0]
-                        for i in range(0,min_register_required):
-                            if src_coloring[i]:
-                                src_right_edge = src_coloring[i][-1][-1][-1]
-                            else:
-                                src_right_edge = -1
-                            if sink_coloring[i]:
-                                sink_left_edge = sink_coloring[i][0][-1][0]
-                            else:
-                                sink_left_edge = sys.maxsize
-                            if src_var[-1][0] > src_right_edge and sink_var[-1][-1] < sink_left_edge:
-                                src_coloring[src_reg].pop()
-                                sink_coloring[sink_reg].pop(0)
-                            if src_var[-1][0] > src_right_edge and sink_var[-1][-1] < sink_left_edge: # type: ignore
-                                src_coloring[i].append(src_var)
-                                sink_coloring[i].insert(0,sink_var)
-
-                                settled = 1
-                        if not settled:
+                        if src_var[-1][0] > src_right_edge and sink_var[-1][-1] < sink_left_edge:
                             src_coloring[src_reg].pop()
                             sink_coloring[sink_reg].pop(0)
-                            src_coloring[min_register_required]=[src_var]
-                            sink_coloring[min_register_required]=[sink_var]
-                            min_register_required += 1
-                            for bb_label in self.cfg:
-                                if min_register_required > len(coloring_result[bb_label]):
-                                    for reg in range(len(coloring_result[bb_label]),min_register_required):
-                                        coloring_result[bb_label][reg] = []
+                        if src_var[-1][0] > src_right_edge and sink_var[-1][-1] < sink_left_edge: # type: ignore
+                            src_coloring[i].append(src_var)
+                            sink_coloring[i].insert(0,sink_var)
+
+                            settled = 1
+                    if not settled:
+                        src_coloring[src_reg].pop()
+                        sink_coloring[sink_reg].pop(0)
+                        src_coloring[min_register_required]=[src_var]
+                        sink_coloring[min_register_required]=[sink_var]
+                        min_register_required += 1
+                        for bb_label in self.cfg:
+                            if min_register_required > len(coloring_result[bb_label]):
+                                for reg in range(len(coloring_result[bb_label]),min_register_required):
+                                    coloring_result[bb_label][reg] = []
     # print("Coloring Result AFTER Aligning")
     # for bb_label in self.cfg:
     #     print(bb_label,":",coloring_result[bb_label])    
@@ -427,34 +438,47 @@ def printRegisterColoring(coloring_result, file=None):
     print(35 * "-", file=file)
 
 def addRegisterAllocation(cdfg_obj, basic_block_obj):
+    setattr(basic_block_obj, 'get_bb_operands', {})
     setattr(basic_block_obj, 'get_bb_operands', get_bb_operands)
+    setattr(basic_block_obj, 'get_bb_left_values', {})
     setattr(basic_block_obj, 'get_bb_left_values', get_bb_left_values)
+    setattr(cdfg_obj, 'get_input_output_variables', {})
     setattr(cdfg_obj, 'get_input_output_variables', get_input_output_variables)
+    setattr(cdfg_obj, 'get_global_variables', {})
     setattr(cdfg_obj, 'get_global_variables', get_global_variables)
+    setattr(cdfg_obj, 'get_local_variable_liveness', {})
     setattr(cdfg_obj, 'get_local_variable_liveness', get_local_variable_liveness)
+    setattr(cdfg_obj, 'get_living_period', {})
     setattr(cdfg_obj, 'get_living_period', get_living_period)
+    setattr(cdfg_obj, 'register_coloring', {})
     setattr(cdfg_obj, 'register_coloring', register_coloring)
 
 
 if __name__ == "__main__":
-    cdfg_obj = parse_llvm_to_cdfg("parse_result")
-    cdfg_obj.build_cfg()
-    cdfg_obj.build_dfg()
+    cdfg = CDFG()
+    cdfg.llvmParser("parse_result")
 
+    cdfg.generateCFG()
+    cdfg.generateDFGs()
 
-    schedule = cdfg_obj.schedule_asap()
+    addScheduler(CDFG)
+    cdfg.scheduleASAP()
+    printSchedule(cdfg.schedule)
 
-    addRegisterAllocation(cdfg, basic_block)
-    input_variables, output_variables = cdfg_obj.get_input_output_variables()
-    global_variable_set = cdfg_obj.get_global_variables()
-    live_local_variables = cdfg_obj.get_local_variable_liveness()
-    living_period = cdfg_obj.get_living_period()
-    coloring_result = cdfg_obj.register_coloring()
+    addRegisterAllocation(CDFG, BasicBlock)
 
+    input_variables, output_variables = cdfg.get_input_output_variables()
     printInputVariables(input_variables=input_variables)
     printOutputVariables(output_variables=output_variables)
+    
+    global_variable_set = cdfg.get_global_variables()
     printGlobalVariables(global_variable_set=global_variable_set)
-    printSchedule(schedule=schedule)
+
+    live_local_variables = cdfg.get_local_variable_liveness()
     printLocalVariablesLivenessCycle(live_local_variables=live_local_variables)
+
+    living_period = cdfg.get_living_period()
     printLocalVariablesLivenessVariable(living_period=living_period)
+    
+    coloring_result = cdfg.register_coloring()
     printRegisterColoring(coloring_result=coloring_result)

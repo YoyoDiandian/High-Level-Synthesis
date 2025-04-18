@@ -39,3 +39,9 @@
 - 将标准RTL输出放到`/output/RTL`下
 - 添加verilog编译文件`output/RTL/compiler.sh`，并将标准RTL的波形图输出放在`/output/RTL/wave`下
 - 将所有parseResult放在`output/parseResult`下
+
+## 4.18
+- 添加`genFSM.py`文件，用于逻辑综合和生成verilog代码。
+- 更改`register_allocator.py`，标准化输出格式
+- 添加`registerAllocator.py`，兼容`main.py`；
+- 更改`scheduler.py`中的`printSchedule`函数

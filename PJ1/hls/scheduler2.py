@@ -15,7 +15,7 @@ resource = [
     1, # OP_LE
     1, # OP_GE
     1, # OP_EQ
-    2, # OP_PHI
+    1, # OP_PHI
     1, # OP_RET
 ]
 
@@ -26,7 +26,7 @@ delay = [
     1, # OP_SUB
     1, # OP_MUL
     1, # OP_DIV
-    2, # OP_LOAD
+    1, # OP_LOAD
     1, # OP_STORE
     1, # OP_BR
     1, # OP_LT
@@ -34,7 +34,7 @@ delay = [
     1, # OP_LE
     1, # OP_GE
     1, # OP_EQ
-    2, # OP_PHI
+    1, # OP_PHI
     1, # OP_RET
 ]
 
@@ -58,7 +58,7 @@ def schedule_asap(self):
         # 每个类型计算单元每个实例的占用情况
         occupation = [None] * len(resource)
         for i in range(len(resource)):
-            occupation[i] = [0] * resource[i]
+            occupation[i] = [0] * resource[i] # type: ignore
         # 尚未执行完毕的指令
         unfinished = list(range(len(bb.ops)))
         sent = []
@@ -108,13 +108,13 @@ def schedule_asap(self):
         schedule_result[bb_label] = bb_schedule
     return schedule_result
 
-cdfg.schedule_asap = schedule_asap
+setattr(cdfg, 'schedule_asap', schedule_asap)
 
 if __name__ == "__main__":
     cdfg_obj = parse_llvm_to_cdfg("parse_result")
     cdfg_obj.build_cfg()
     cdfg_obj.build_dfg()
-    schedule = cdfg_obj.schedule_asap()
+    schedule = cdfg_obj.schedule_asap() # type: ignore
     for i in cdfg_obj.cfg:
         #print(cdfg_obj.cfg[i].dfg)
         print(i,schedule[i])
