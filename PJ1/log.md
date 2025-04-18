@@ -40,8 +40,13 @@
 - 添加verilog编译文件`output/RTL/compiler.sh`，并将标准RTL的波形图输出放在`/output/RTL/wave`下
 - 将所有parseResult放在`output/parseResult`下
 
-## 4.18
+## 4.18 f1a927c460743bc4a37482261f396d3ba560bd12
 - 添加`genFSM.py`文件，用于逻辑综合和生成verilog代码。
 - 更改`register_allocator.py`，标准化输出格式
 - 添加`registerAllocator.py`，兼容`main.py`；
 - 更改`scheduler.py`中的`printSchedule`函数
+
+## 4.18 
+- 更新`main.py`，将从parse过的LLVM伪代码直接输入到main，输出为：调度结果、输入变量、输出变量、
+全局变量（寄存器）、寄存器生存周期（cycle order, register order）以及最后的寄存器分配结果。
+- 注释掉`scheduler.py`中处理跳转指令的部分，使得调度时br指令也可以放在第一个周期调度（如果资源充足的情况下）。

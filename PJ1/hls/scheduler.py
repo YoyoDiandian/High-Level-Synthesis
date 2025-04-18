@@ -226,8 +226,8 @@ def scheduleASAP(self):
         # 调度操作
         op_schedule = scheduleOperations(bb, in_degree, op_schedule, resource_remain)
         
-        # 处理跳转指令
-        op_schedule = processBranchInstructions(bb, op_schedule)
+        # # 处理跳转指令
+        # op_schedule = processBranchInstructions(bb, op_schedule)
         
         # 转换为周期列表
         cycle_list = convertCycleList(op_schedule)

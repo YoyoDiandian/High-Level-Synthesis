@@ -44,5 +44,17 @@ def main():
     printInputVariables(input_variables=input_variables)
     printOutputVariables(output_variables=output_variables)
 
+    global_variable_set = cdfg.get_global_variables()
+    printGlobalVariables(global_variable_set=global_variable_set)
+
+    live_local_variables = cdfg.get_local_variable_liveness()
+    printLocalVariablesLivenessCycle(live_local_variables=live_local_variables)
+
+    living_period = cdfg.get_living_period()
+    printLocalVariablesLivenessVariable(living_period=living_period)
+    
+    coloring_result = cdfg.register_coloring()
+    printRegisterColoring(coloring_result=coloring_result)
+
 if __name__ == "__main__":
     main()
