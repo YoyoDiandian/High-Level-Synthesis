@@ -1,5 +1,3 @@
-from scheduler import scheduleASAP, schedulePrinter, addScheduler
-from cdfgGenerator import BasicBlock, CDFG
 import sys
 
 def get_op_operands(op):
@@ -46,82 +44,70 @@ def get_input_output_variables(self):
     param_list = [param[0] for param in self.params]
     # for param in self.params:
     #     param_list.append(param[0])
-    input_variables = {}
-    output_variables = {}
+    self.input_variables = {}
+    self.output_variables = {}
     require_variables = {}
     visited = {}
 
     for bb in self.basicBlocks:
         visited[bb] = 0
-        input_variables[bb] = set()
+        self.input_variables[bb] = set()
         require_variables[bb] = self.basicBlocks[bb].get_bb_operands()-self.basicBlocks[bb].get_bb_left_values()
     bb_queue = ['0']
     visited['0'] = 1
     while bb_queue:
         bb = bb_queue.pop(0)
-        output_variables[bb] = (input_variables[bb] | self.basicBlocks[bb].get_bb_left_values())-self.basicBlocks[bb].get_bb_operands()
+        self.output_variables[bb] = (self.input_variables[bb] | self.basicBlocks[bb].get_bb_left_values())-self.basicBlocks[bb].get_bb_operands()
         for edge in self.cfg.successors(bb):
             next_bb = edge
-            input_variables[next_bb] = input_variables[next_bb] | output_variables[bb]
+            self.input_variables[next_bb] = self.input_variables[next_bb] | self.output_variables[bb]
             if visited[next_bb] == 0:
                 visited[next_bb] = 1
                 bb_queue.append(next_bb)
 
-    for label, variable_set in input_variables.items():
+    for label, variable_set in self.input_variables.items():
         removal_list = []
         for v in variable_set:
             if (v in param_list) or v.isdigit():
                 removal_list.append(v)
         for v in removal_list:
-            input_variables[label].remove(v)
+            self.input_variables[label].remove(v)
 
-    for label, variable_set in output_variables.items():
+    for label, variable_set in self.output_variables.items():
         removal_list = []
         for v in variable_set:
             if (v in param_list) or v.isdigit():
                 removal_list.append(v)
         for v in removal_list:
-            output_variables[label].remove(v)
+            self.output_variables[label].remove(v)
 
-    
-
-    return input_variables, output_variables
 
 def get_global_variables(self):
-    global_variable_set = set()
+    self.global_variable = set()
     for param in self.params:
         if param[1] == 'non-array':
-            global_variable_set.add(param[0])
+            self.global_variable.add(param[0])
     bb_operands_list = []
     for bb in self.basicBlocks.values():
         bb_operands_list.append(bb.get_bb_operands())
     L = len(bb_operands_list)
     for i in range(L):
         for j in range(i+1,L):
-            global_variable_set = global_variable_set | (bb_operands_list[i]&bb_operands_list[j])
+            self.global_variable = self.global_variable | (bb_operands_list[i]&bb_operands_list[j])
     removal_list = []
-    for v in global_variable_set:
+    for v in self.global_variable:
         if v.isdigit():
             removal_list.append(v)
     for v in removal_list:
-        global_variable_set.remove(v)
-    return global_variable_set
+        self.global_variable.remove(v)
 
 def get_local_variable_liveness(self):
-    # print("Getting Local Variable Liveness:")
-    live_local_variables = {}
+    self.live_local_variables = {}
 
-    input_variables, output_variables = self.get_input_output_variables()
-    global_variable_set = self.get_global_variables()
-
-    self.scheduleASAP()
-    # if not self.schedule:
-    #     raise ValueError("Schedule is not generated. Ensure that scheduleASAP() is called and works correctly.")
-    
     for bb_label, bb in self.basicBlocks.items():
         bb_live_local_variables = []
         
-        cycle_live_local_variables = input_variables.get(bb_label, set()) - global_variable_set
+        cycle_live_local_variables = self.input_variables.get(bb_label, set()) - self.global_variable
         bb_live_local_variables.append(cycle_live_local_variables)
         for cycle in range(len(self.schedule[bb_label])):
             ops = self.schedule[bb_label][cycle]
@@ -135,25 +121,17 @@ def get_local_variable_liveness(self):
                 if left_value:
                     cycle_left_values = cycle_left_values | {left_value}
             if cycle_left_values:
-                cycle_live_local_variables = (((cycle_live_local_variables - (cycle_operands-output_variables[bb_label])))|cycle_left_values) - global_variable_set
+                cycle_live_local_variables = (((cycle_live_local_variables - (cycle_operands-self.output_variables[bb_label])))|cycle_left_values) - self.global_variable
             else:
-                cycle_live_local_variables = ((cycle_live_local_variables - (cycle_operands-output_variables[bb_label]))) - global_variable_set
+                cycle_live_local_variables = ((cycle_live_local_variables - (cycle_operands-self.output_variables[bb_label]))) - self.global_variable
 
             bb_live_local_variables.append(cycle_live_local_variables)
-        live_local_variables[bb_label] = bb_live_local_variables
-        # print(bb_label,":",bb_live_local_variables)
-
-        # print(f"Basic block {bb_label}:")
-    # print(35 * "-")
-    # print(live_local_variables)
-    return live_local_variables
+        self.live_local_variables[bb_label] = bb_live_local_variables
 
 def get_living_period(self):
-    live_local_variables = self.get_local_variable_liveness()
-    # print("Getting Living Period:")
-    living_period = {}
+    self.living_period = {}
     for bb_label, bb in self.basicBlocks.items():
-        bb_live_local_variables = live_local_variables[bb_label]
+        bb_live_local_variables = self.live_local_variables[bb_label]
         bb_live_period = {}
         for i, cycle in enumerate(bb_live_local_variables):
             for v in cycle:
@@ -161,65 +139,48 @@ def get_living_period(self):
                     bb_live_period[v] = [i,i]
                 else:
                     bb_live_period[v][1] = i
-        living_period[bb_label]=bb_live_period
-        # print(bb_label, ":", bb_live_period)
-        # print(f"Basic block {bb_label}")
-    # print(35 * "-")
-    return living_period
+        self.living_period[bb_label]=bb_live_period
 
 def register_coloring(self):
-    # 获取变量生存周期
-    living_period = self.get_living_period()
-    coloring_result = {}
-    # print("Coloring Registers:")
-    # print("Coloring Result BEFORE Aligning:")
+    self.coloring_result = {}
 
     for bb_label, bb in self.basicBlocks.items():
         bb_coloring_result ={}
         # 将该块内局部变量初始化为未染色
-        uncolored = list(living_period[bb_label].keys())
-        uncolored.sort(key = lambda x:(living_period[bb_label][x][0],(living_period[bb_label][x][1]-living_period[bb_label][x][0]),x))
+        uncolored = list(self.living_period[bb_label].keys())
+        uncolored.sort(key = lambda x:(self.living_period[bb_label][x][0],(self.living_period[bb_label][x][1]-self.living_period[bb_label][x][0]),x))
 
         color = 0
         while uncolored:
             colored_var_list = []
             right_edge = -1
             for v in uncolored:
-                if living_period[bb_label][v][0] > right_edge:
+                if self.living_period[bb_label][v][0] > right_edge:
                     # 在该颜色的列表中加上该变量及其存活周期
-                    colored_var_list.append((v,living_period[bb_label][v]))
+                    colored_var_list.append((v,self.living_period[bb_label][v]))
                     # 更新右边沿
-                    right_edge = living_period[bb_label][v][1]
+                    right_edge = self.living_period[bb_label][v][1]
             bb_coloring_result[color] = colored_var_list
             color += 1
             for v,_ in colored_var_list:
                 # 更新染色状态
                 uncolored.remove(v)
-        coloring_result[bb_label] = bb_coloring_result
+        self.coloring_result[bb_label] = bb_coloring_result
         #print(bb_label,":",bb_coloring_result)
 
     min_register_required = 0
     for bb_label in self.cfg:
-        min_register_required = max(len(coloring_result[bb_label]),min_register_required)
+        min_register_required = max(len(self.coloring_result[bb_label]),min_register_required)
     for bb_label in self.cfg:
-        if min_register_required > len(coloring_result[bb_label]):
-            for reg in range(len(coloring_result[bb_label]),min_register_required):
-                coloring_result[bb_label][reg] = []
-    # for bb_label in self.cfg:
-    #     print(bb_label,":",coloring_result[bb_label])
-    # print(35 * "-")
-    
-    input_variables, output_variables = self.get_input_output_variables()
-    global_variables = self.get_global_variables()
-    # cfg_adj_list = self.cfg
-    # for src_label in cfg_adj_list:
-    #     for sink_label, _ in cfg_adj_list[src_label]:
-    for src_label, sink_label, _ in self.cfg.edges(data=True):
-        src_coloring = coloring_result[src_label]
-        sink_coloring = coloring_result[sink_label]
-        #print(src_label,sink_label,":")
+        if min_register_required > len(self.coloring_result[bb_label]):
+            for reg in range(len(self.coloring_result[bb_label]),min_register_required):
+                self.coloring_result[bb_label][reg] = []
 
-        checklist = list((output_variables[src_label] & input_variables[sink_label]) - global_variables)
+    for src_label, sink_label, _ in self.cfg.edges(data=True):
+        src_coloring = self.coloring_result[src_label]
+        sink_coloring = self.coloring_result[sink_label]
+
+        checklist = list((self.output_variables[src_label] & self.input_variables[sink_label]) - self.global_variable)
         var_check_liveness = {}
         for var_check in checklist:
             for reg in src_coloring.values():
@@ -228,7 +189,6 @@ def register_coloring(self):
                         var_check_liveness[var_check] = reg[-1][-1][-1]-reg[-1][-1][0]
         checklist.sort(key=lambda x:(-var_check_liveness[x]))
 
-        #print(checklist)
         src_reg = -1
         sink_reg = -1
         for var_check in checklist:
@@ -332,24 +292,112 @@ def register_coloring(self):
                         sink_coloring[min_register_required]=[sink_var]
                         min_register_required += 1
                         for bb_label in self.cfg:
-                            if min_register_required > len(coloring_result[bb_label]):
-                                for reg in range(len(coloring_result[bb_label]),min_register_required):
-                                    coloring_result[bb_label][reg] = []
-    # print("Coloring Result AFTER Aligning")
-    # for bb_label in self.cfg:
-    #     print(bb_label,":",coloring_result[bb_label])    
-    # print(35 * "-")     
-    return coloring_result
+                            if min_register_required > len(self.coloring_result[bb_label]):
+                                for reg in range(len(self.coloring_result[bb_label]),min_register_required):
+                                    self.coloring_result[bb_label][reg] = []
     
 
-def printInputVariables(input_variables, file=None):
+def merge_registers(self):
+    """
+    合并没有时间重叠的寄存器，将高序号寄存器合并到低序号寄存器中
+    
+    参数:
+        coloring_result: 原始的寄存器分配结果
+        
+    返回:
+        merged_coloring_result: 合并后的寄存器分配结果
+    """
+    self.merged_coloring_result = {}
+    
+    # 处理每个基本块
+    for bb_label, bb_coloring in self.coloring_result.items():
+        # 复制原始分配结果
+        merged_bb_coloring = {reg: var_list.copy() for reg, var_list in bb_coloring.items()}
+        
+        # 获取寄存器数量
+        num_registers = len(bb_coloring)
+        
+        # 创建寄存器使用周期列表
+        register_periods = {}
+        for reg, var_list in bb_coloring.items():
+            periods = []
+            for var, period in var_list:
+                periods.append((period[0], period[1]))
+            register_periods[reg] = periods
+        
+        # 标记已经合并的寄存器
+        merged_registers = set()
+        
+        # 尝试合并寄存器，从低序号寄存器开始
+        for i in range(num_registers - 1):
+            if i in merged_registers:
+                continue
+                
+            # 获取寄存器i的使用周期
+            periods_i = register_periods[i]
+            
+            # 检查更高序号的寄存器
+            for j in range(i + 1, num_registers):
+                if j in merged_registers:
+                    continue
+                    
+                # 获取寄存器j的使用周期
+                periods_j = register_periods[j]
+                
+                # 检查是否有重叠
+                can_merge = True
+                for start_i, end_i in periods_i:
+                    for start_j, end_j in periods_j:
+                        # 检查周期是否重叠
+                        if not (end_i < start_j or end_j < start_i):
+                            can_merge = False
+                            break
+                    if not can_merge:
+                        break
+                
+                # 如果可以合并，将j中的变量移动到i
+                if can_merge:
+                    # 将j的变量添加到i
+                    merged_bb_coloring[i].extend(merged_bb_coloring[j])
+                    # 清空j的变量
+                    merged_bb_coloring[j] = []
+                    # 更新i的使用周期
+                    register_periods[i].extend(periods_j)
+                    # 标记j为已合并
+                    merged_registers.add(j)
+        
+        # 重新整理寄存器分配结果，移除空寄存器
+        compact_bb_coloring = {}
+        reg_idx = 0
+        
+        # 先添加非空寄存器
+        for old_reg, var_list in sorted(merged_bb_coloring.items()):
+            if var_list:
+                compact_bb_coloring[reg_idx] = var_list
+                reg_idx += 1
+        
+        # 保存结果
+        self.merged_coloring_result[bb_label] = compact_bb_coloring
+    
+    # 确保所有基本块使用相同数量的寄存器
+    max_registers = 0
+    for bb_coloring in self.merged_coloring_result.values():
+        max_registers = max(max_registers, len(bb_coloring))
+    
+    for bb_label in self.merged_coloring_result:
+        for reg in range(len(self.merged_coloring_result[bb_label]), max_registers):
+            self.merged_coloring_result[bb_label][reg] = []
+    
+    # return self.merged_coloring_result
+
+def printInputVariables(self, file=None):
     """
         Print input variables information.
     """
     # print(35 * "-")
     print("Input variables:", file=file)
     # print(input_variables)
-    for block_label, variables in input_variables.items():
+    for block_label, variables in self.input_variables.items():
         print(f"Basic block {block_label}:", file=file)
         if not variables:
             print(f"No input variables in this block.", end="  ", file=file)
@@ -359,13 +407,13 @@ def printInputVariables(input_variables, file=None):
         print(file=file)
     print(35 * "-", file=file)
 
-def printOutputVariables(output_variables, file=None):
+def printOutputVariables(self, file=None):
     """
         Print output variables information.
     """
     print("Output variables:", file=file)
     # print(output_variables)
-    for block_label, variables in output_variables.items():
+    for block_label, variables in self.output_variables.items():
         print(f"Basic block {block_label}:", file=file)
         if not variables:
             print(f"No output variables in this block.", end="  ", file=file)
@@ -375,25 +423,25 @@ def printOutputVariables(output_variables, file=None):
         print(file=file)
     print(35 * "-", file=file)
 
-def printGlobalVariables(global_variable_set, file=None):
+def printGlobalVariables(self, file=None):
     """
         Print global variables information.
     """
     print("Global Variables:", file=file)
     # print(global_variable_set)
-    if global_variable_set:
-        print("  ".join(global_variable_set), file=file)
+    if self.global_variable:
+        print("  ".join(self.global_variable), file=file)
     else:
         print("No global variables", file=file)
     print(35 * "-", file=file)
 
-def printLocalVariablesLivenessCycle(live_local_variables, file=None):
+def printLocalVariablesLivenessCycle(self, file=None):
     """
         Print local variable liveness, in cycle order.
     """
     print("Getting Local Variable Liveness:", file=file)
     # print(live_local_variables)
-    for bb_label, bb_live_local_variables in live_local_variables.items():
+    for bb_label, bb_live_local_variables in self.live_local_variables.items():
         print(f"Basic block {bb_label}: ", file=file)
         # print(bb_live_local_variables, file=file)
         for cycle, variable in enumerate(bb_live_local_variables):
@@ -405,13 +453,13 @@ def printLocalVariablesLivenessCycle(live_local_variables, file=None):
     print(35 * "-", file=file)
     # print(live_local_variables, file=file)
 
-def printLocalVariablesLivenessVariable(living_period, file=None):
+def printLocalVariablesLivenessVariable(self, file=None):
     """
         Print local variable liveness, in variable order.
     """
     print("Getting Living Period for every local variable:", file=file)
     # print(living_period)
-    for bb_label, bb_variable_liveness in living_period.items():
+    for bb_label, bb_variable_liveness in self.living_period.items():
         print(f"Basic block {bb_label}: ", file=file)
         if not bb_variable_liveness:
             print(f"  No variable living in this basic block.", file=file)
@@ -420,13 +468,13 @@ def printLocalVariablesLivenessVariable(living_period, file=None):
                 print(f"  Variable\t{variable}\tlives from cycle {var_living_period[0]} to cycle {var_living_period[1]}", file=file)
     print(35 * "-", file=file)
 
-def printRegisterColoring(coloring_result, file=None):
+def printRegisterColoring(self, file=None):
     """
         Print register allocation result after aligning, using left-edge algorithm.    
     """
-    print("Coloring Register by using Left-Edge Algorithm, after Aligning:", file=file)
+    print("Register Allocation:", file=file)
     # print(coloring_result)
-    for bb_label, bb_reg_dict in coloring_result.items():
+    for bb_label, bb_reg_dict in self.coloring_result.items():
         print(f"Basic block {bb_label}: ", file=file)
         for bb_reg_index, bb_reg_allocation in bb_reg_dict.items():
             print(f"  Register {bb_reg_index}:", file=file)
@@ -436,6 +484,15 @@ def printRegisterColoring(coloring_result, file=None):
                 print(f"    stores variable\t{bb_reg_allocation_items[0]}\tfrom cycle {start_cycle} to cycle {end_cycle}", file=file)
     
     print(35 * "-", file=file)
+
+def registerAllocation(cdfg_obj):
+    get_input_output_variables(cdfg_obj)
+    get_global_variables(cdfg_obj)
+    get_local_variable_liveness(cdfg_obj)
+    get_living_period(cdfg_obj)
+    register_coloring(cdfg_obj)
+    merge_registers(cdfg_obj)
+
 
 def addRegisterAllocation(cdfg_obj, basic_block_obj):
     setattr(basic_block_obj, 'get_bb_operands', {})
@@ -452,41 +509,23 @@ def addRegisterAllocation(cdfg_obj, basic_block_obj):
     setattr(cdfg_obj, 'get_living_period', get_living_period)
     setattr(cdfg_obj, 'register_coloring', {})
     setattr(cdfg_obj, 'register_coloring', register_coloring)
+    setattr(cdfg_obj, 'merge_registers', {})
+    setattr(cdfg_obj, 'merge_registers', merge_registers)
+    setattr(cdfg_obj, 'registerAllocation', {})
+    setattr(cdfg_obj, 'registerAllocation', registerAllocation)
 
-def registerAllocatorPrinter(input_variables, output_variables, global_variable_set, live_local_variables, living_period, coloring_result, file=None):
-    printInputVariables(input_variables, file)
-    printOutputVariables(output_variables, file)
-    printGlobalVariables(global_variable_set, file)
-    printLocalVariablesLivenessCycle(live_local_variables, file)
-    printLocalVariablesLivenessVariable(living_period, file)
-    printRegisterColoring(coloring_result, file)
-
-# if __name__ == "__main__":
-#     cdfg = CDFG()
-#     cdfg.llvmParser("parse_result")
-
-#     cdfg.generateCFG()
-#     cdfg.generateDFGs()
-
-#     addScheduler(CDFG)
-#     cdfg.scheduleASAP()
-#     schedulePrinter(cdfg)
-
-#     addRegisterAllocation(CDFG, BasicBlock)
-
-#     input_variables, output_variables = cdfg.get_input_output_variables()
-#     printInputVariables(input_variables=input_variables)
-#     printOutputVariables(output_variables=output_variables)
-    
-#     global_variable_set = cdfg.get_global_variables()
-#     printGlobalVariables(global_variable_set=global_variable_set)
-
-#     live_local_variables = cdfg.get_local_variable_liveness()
-#     printLocalVariablesLivenessCycle(live_local_variables=live_local_variables)
-
-#     living_period = cdfg.get_living_period()
-#     printLocalVariablesLivenessVariable(living_period=living_period)
-    
-#     coloring_result = cdfg.register_coloring()
-#     printRegisterColoring(coloring_result=coloring_result)
-
+def registerAllocatorPrinter(self, file=None):
+    print("===== Initial Register Allocation =====", file=file)
+    printInputVariables(self, file)
+    printOutputVariables(self, file)
+    printGlobalVariables(self, file)
+    printLocalVariablesLivenessCycle(self, file)
+    printLocalVariablesLivenessVariable(self, file)
+    printRegisterColoring(self, file)
+    print("\nRegister Usage Statistics:", file=file)
+    for bb_label in self.merged_coloring_result:
+        initial_regs = len([r for r in self.coloring_result[bb_label] if self.coloring_result[bb_label][r]])
+        merged_regs = len([r for r in self.merged_coloring_result[bb_label] if self.merged_coloring_result[bb_label][r]])
+        savings = initial_regs - merged_regs
+        print(f"  Basic block {bb_label}: Initial: {initial_regs}, After merging: {merged_regs}, Saved: {savings} registers", file=file)
+    print("=====================================\n", file=file)

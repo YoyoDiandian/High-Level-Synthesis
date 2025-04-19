@@ -1,0 +1,166 @@
+===== Function Basic Information =====
+Function name: dotprod
+Return type: int
+Parameters: [('a', 'array'), ('b', 'array'), ('n', 'non-array')]
+========================
+
+===== Basic Block Information =====
+Basic block 0:
+	Next basic block: start
+	Operation list:
+		[0] ['c', 0, '0']
+Basic block start:
+	Next basic block: calc
+	Operation list:
+		[0] ['i', 13, '0', '0', 'i_inc', 'calc']
+		[1] ['cl', 13, 'c', '0', 'cr', 'calc']
+		[2] ['cond', 11, 'i', 'n']
+		[3] ['', 7, 'cond', 'ret', 'calc']
+Basic block calc:
+	Next basic block: ret
+	Operation list:
+		[0] ['ai', 5, 'a', 'i']
+		[1] ['bi', 5, 'b', 'i']
+		[2] ['ci', 3, 'ai', 'bi']
+		[3] ['cr', 1, 'cl', 'ci']
+		[4] ['i_inc', 1, 'i', '1']
+		[5] ['', 7, 'start']
+Basic block ret:
+	Next basic block: None
+	Operation list:
+		[0] ['', 14, 'cl']
+===================
+
+===== Control Flow Graph (CFG) =====
+	0 -> start [Condition: true]
+	start -> ret [Condition: cond]
+	start -> calc [Condition: not cond]
+	calc -> start [Condition: true]
+=======================
+
+===== Data Flow Graph (DFG) =====
+	DFG of basic block start:
+		Operation 0 -> 2 [Value: i]
+		Operation 2 -> 3 [Value: cond]
+	DFG of basic block calc:
+		Operation 0 -> 2 [Value: ai]
+		Operation 1 -> 2 [Value: bi]
+		Operation 2 -> 3 [Value: ci]
+=======================
+
+===== Schedule Results =====
+Basic block 0's schedule results:
+  cycle 0: (operation 0, resource 0) 
+Basic block start's schedule results:
+  cycle 0: (operation 0, resource 0) 
+  cycle 1: (operation 1, resource 0) (operation 2, resource 0) 
+  cycle 2: (operation 3, resource 0) 
+Basic block calc's schedule results:
+  cycle 0: (operation 0, resource 0) (operation 4, resource 0) (operation 5, resource 0) 
+  cycle 1: (operation 1, resource 0) 
+  cycle 2: (operation 2, resource 0) 
+  cycle 3: (operation 3, resource 0) 
+Basic block ret's schedule results:
+  cycle 0: (operation 0, resource 0) 
+===================================
+
+===== Initial Register Allocation =====
+Input variables:
+Basic block 0:
+No input variables in this block.  
+Basic block start:
+c  cr  i_inc  
+Basic block calc:
+cl  
+Basic block ret:
+cl  
+-----------------------------------
+Output variables:
+Basic block 0:
+c  
+Basic block start:
+cl  
+Basic block ret:
+No output variables in this block.  
+Basic block calc:
+cr  i_inc  
+-----------------------------------
+Global Variables:
+i  cl  n
+-----------------------------------
+Getting Local Variable Liveness:
+Basic block 0: 
+  cycle 0, there's no variable living in this cycle.
+  cycle 1, variable	c	is living.
+Basic block start: 
+  cycle 0, variable	c, cr, i_inc	is living.
+  cycle 1, variable	c, cr	is living.
+  cycle 2, variable	cond	is living.
+  cycle 3, there's no variable living in this cycle.
+Basic block calc: 
+  cycle 0, there's no variable living in this cycle.
+  cycle 1, variable	ai, i_inc	is living.
+  cycle 2, variable	ai, bi, i_inc	is living.
+  cycle 3, variable	i_inc, ci	is living.
+  cycle 4, variable	cr, i_inc	is living.
+Basic block ret: 
+  cycle 0, there's no variable living in this cycle.
+  cycle 1, there's no variable living in this cycle.
+-----------------------------------
+Getting Living Period for every local variable:
+Basic block 0: 
+  Variable	c	lives from cycle 1 to cycle 1
+Basic block start: 
+  Variable	c	lives from cycle 0 to cycle 1
+  Variable	cr	lives from cycle 0 to cycle 1
+  Variable	i_inc	lives from cycle 0 to cycle 0
+  Variable	cond	lives from cycle 2 to cycle 2
+Basic block calc: 
+  Variable	ai	lives from cycle 1 to cycle 2
+  Variable	i_inc	lives from cycle 1 to cycle 4
+  Variable	bi	lives from cycle 2 to cycle 2
+  Variable	ci	lives from cycle 3 to cycle 3
+  Variable	cr	lives from cycle 4 to cycle 4
+Basic block ret: 
+  No variable living in this basic block.
+-----------------------------------
+Register Allocation:
+Basic block 0: 
+  Register 0:
+  Register 1:
+    stores variable	c	from cycle 1 to cycle 1
+  Register 2:
+  Register 3:
+Basic block start: 
+  Register 0:
+    stores variable	cond	from cycle 2 to cycle 2
+  Register 1:
+    stores variable	c	from cycle 0 to cycle 1
+  Register 2:
+    stores variable	cr	from cycle 0 to cycle 1
+  Register 3:
+    stores variable	i_inc	from cycle 0 to cycle 0
+Basic block calc: 
+  Register 0:
+    stores variable	ai	from cycle 1 to cycle 2
+    stores variable	ci	from cycle 3 to cycle 3
+  Register 1:
+  Register 2:
+    stores variable	bi	from cycle 2 to cycle 2
+    stores variable	cr	from cycle 4 to cycle 4
+  Register 3:
+    stores variable	i_inc	from cycle 1 to cycle 4
+Basic block ret: 
+  Register 0:
+  Register 1:
+  Register 2:
+  Register 3:
+-----------------------------------
+
+Register Usage Statistics:
+  Basic block 0: Initial: 1, After merging: 1, Saved: 0 registers
+  Basic block start: Initial: 4, After merging: 3, Saved: 1 registers
+  Basic block calc: Initial: 3, After merging: 3, Saved: 0 registers
+  Basic block ret: Initial: 0, After merging: 0, Saved: 0 registers
+=====================================
+

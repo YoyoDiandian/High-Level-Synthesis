@@ -48,8 +48,15 @@
 ## 4.17 ec9f37dad08e3115d83828b3c3e7642d54205f87
 - 更改`cdfgGenerator.py`和`scheduler.py`中的一小部分代码表述
 
-## 4.19 
+## 4.19 9e67cd1ff66209ccf464150356556e090359c636
 - 微改`autorun.sh`，在终端中输出`main.py`运行成功的信息
 - 更改`main.py`，import `registerAllocator.py`；通过运行`sh autorun.sh example/xxx.ll `
 可以直接得到CDFG、调度结果、全局变量、寄存器生存周期和染色结果等信息。
 - 更改`scheduler.py`中的`schedulePrinter`
+
+## 4.20 
+- 改了`cdfgGenerator.py`的注释和输出为英文
+- 在`resourceAllocator.py`中增加对冗余寄存器的合并函数
+- 对`resourceAllocator.py`中重复调用的函数进行删除。对于反复调用函数的问题进行了优化。所有的函数不再采用`return`结果的方法进行数据传递，而是将数据存储在`CDFG`类中。将所有函数整理到同一`registerAllocator`函数中，可以在`main.py`中统一调用。
+- 对输出文件进行名字修改，输出文件名与输入文件相关
+- 将Resource和Delay同一放到`resourceData.py`中

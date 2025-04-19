@@ -1,59 +1,4 @@
-# from cdfgGenerator import CDFG
-
-# 操作类型常量定义
-OP_ASSIGN = 0
-OP_ADD = 1
-OP_SUB = 2
-OP_MUL = 3
-OP_DIV = 4
-OP_LOAD = 5
-OP_STORE = 6
-OP_BR = 7
-OP_LT = 8
-OP_GT = 9
-OP_LE = 10
-OP_GE = 11
-OP_EQ = 12
-OP_PHI = 13
-OP_RET = 14
-
-# 定义计算资源
-RESOURCE = [
-    1, # OP_ASSIGN
-    1, # OP_ADD
-    1, # OP_SUB
-    1, # OP_MUL
-    1, # OP_DIV
-    1, # OP_LOAD
-    1, # OP_STORE
-    1, # OP_BR
-    1, # OP_LT
-    1, # OP_GT
-    1, # OP_LE
-    1, # OP_GE
-    1, # OP_EQ
-    1, # OP_PHI
-    1, # OP_RET
-]
-
-# 定义延迟
-DELAY = [
-    1, # OP_ASSIGN
-    1, # OP_ADD
-    1, # OP_SUB
-    1, # OP_MUL
-    1, # OP_DIV
-    1, # OP_LOAD
-    1, # OP_STORE
-    1, # OP_BR
-    1, # OP_LT
-    1, # OP_GT
-    1, # OP_LE
-    1, # OP_GE
-    1, # OP_EQ
-    1, # OP_PHI
-    1, # OP_RET
-]
+from resourceData import *
 
 def initializeSchedulingResources(bb):
     """初始化调度所需的资源和数据结构"""
@@ -258,7 +203,7 @@ def schedulePrinter(cdfg, file=None):
     """
     Print schedule results.
     """
-    print("Schedule results:", file=file)
+    print("===== Schedule Results =====", file=file)
     for bbLabel, cycles in cdfg.schedule.items():
         print(f"Basic block {bbLabel}'s schedule results:", file=file)
         for cycle_idx, ops in enumerate(cycles):
@@ -266,7 +211,7 @@ def schedulePrinter(cdfg, file=None):
             for op_idx, device_idx in ops:
                 print(f"(operation {op_idx}, resource {device_idx}) ", end="", file=file)
             print(file=file)
-    print(35 * "-", file=file)
+    print(35 * "=" + "\n", file=file)
 
 def getOperationName(op_type):
     """获取操作类型的名称"""

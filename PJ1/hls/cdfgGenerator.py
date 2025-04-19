@@ -4,50 +4,50 @@ import networkx as nx
 import sys
 
 class BasicBlock:
-    """表示控制流图中的一个基本块"""
+    """a basic block within the CFG"""
     
     def __init__(self, label):
         """
-        初始化基本块
+        initialize basic block
         
         Args:
-            label: 基本块的标签
+            label: the label of basic block
         """
         self.label = label
-        self.ops = []  # 操作列表
-        self.dfg = nx.DiGraph()  # 使用NetworkX有向图表示数据流图
-        self.next_bb = None  # 下一个基本块的标签
+        self.ops = []  # Operation list
+        self.dfg = nx.DiGraph()  # Use NetworkX directed graph to represent data flow graph
+        self.next_bb = None  # Label of the next basic block
 
     def addOP(self, op):
-        """添加操作到基本块"""
+        """add operation to basic block"""
         self.ops.append(op)
 
     def generateDFG(self):
         """
-        构建数据流图（DFG）
-        每个节点是操作索引，边表示数据依赖关系
+        build DFG
+        Each node is operation index, edges represent data dependencies
         """
-        # 清空已有图
+        # Clear existing graph
         self.dfg.clear()
         
-        # 添加所有操作作为节点
+        # Add all operations as nodes
         for i in range(len(self.ops)):
             self.dfg.add_node(i, operation=self.ops[i])
             
-        # 遍历每个操作，建立数据依赖边
+        # Traverse each operation to establish data dependency edges
         for i, op in enumerate(self.ops):
-            # 当前操作产生的值
+            # Value produced by the current operation
             current_value = op[0]
             
-            # 当前操作使用的操作数
+            # Operands used by the current operation
             operands = op[2:]
             
-            # 查找操作数的来源（向前搜索）
+            # Find the source of operands (search forward)
             for j in range(i):
                 prev_op = self.ops[j]
                 prev_value = prev_op[0]
                 
-                # 如果前面的操作产生了当前操作使用的值，添加边
+                # If the previous operation produces a value used by the current operation, add an edge
                 if prev_value in operands:
                     self.dfg.add_edge(j, i, value=prev_value)
         
@@ -55,41 +55,41 @@ class BasicBlock:
 
 
 class CDFG:
-    """控制数据流图(CDFG)的表示"""
+    """Control Data Flow Graph (CDFG) representation"""
     
     def __init__(self):
-        """初始化CDFG对象"""
-        self.basicBlocks = {}  # 基本块字典，键为基本块标签
-        self.retType = None    # 函数返回类型
-        self.functionName = None  # 函数名
-        self.params = []  # 函数参数列表
-        self.cfg = nx.DiGraph()  # 使用NetworkX有向图表示控制流图
+        """Initialize CDFG object"""
+        self.basicBlocks = {}  # Dictionary of basic blocks, key is the basic block label
+        self.retType = None    # Function return type
+        self.functionName = None  # Function name
+        self.params = []  # Function parameter list
+        self.cfg = nx.DiGraph()  # Use NetworkX directed graph to represent control flow graph
     
     def llvmParser(self, file_path):
         """
-        解析LLVM格式的parse_result文件，构建CDFG结构
+        Parse LLVM format parse_result file to build CDFG structure
         
         Args:
-            file_path: parse_result文件的路径
+            file_path: Path to the parse_result file
         """
         try:
             with open(file_path, 'r') as f:
                 content = f.read()
         except FileNotFoundError:
-            print(f"错误：找不到文件 {file_path}")
+            print(f"Error: File not found {file_path}")
             return None
         
-        # 解析返回类型
+        # Parse return type
         ret_type_match = re.search(r'ret type: (\w+)', content)
         if ret_type_match:
             self.retType = ret_type_match.group(1)
         
-        # 解析函数名
+        # Parse function name
         func_name_match = re.search(r'function name (\w+)', content)
         if func_name_match:
             self.functionName = func_name_match.group(1)
         
-        # 解析参数
+        # Parse parameters
         # params = []
         param_matches = re.finditer(r'(array|non-array)\s+(\w+)', content)
         for match in param_matches:
@@ -97,31 +97,31 @@ class CDFG:
             self.params.append((param_name, param_type))
         # self.params = params
         
-        # 解析基本块
+        # Parse basic blocks
         basic_block_pattern = r'Basic Block label: (\w+)(.*?)(?=Basic Block label:|$)'
         basic_block_matches = re.finditer(basic_block_pattern, content, re.DOTALL)
         
-        # 获取所有基本块标签
+        # Get all basic block labels
         bb_labels = []
         for match in basic_block_matches:
             label = match.group(1)
             bb_labels.append(label)
         
-        # 重新开始匹配基本块
+        # Restart matching basic blocks
         basic_block_matches = re.finditer(basic_block_pattern, content, re.DOTALL)
         
         for i, match in enumerate(basic_block_matches):
             label = match.group(1)
             block_content = match.group(2).strip()
             
-            # 创建基本块对象
+            # Create basic block object
             bb = BasicBlock(label)
             
-            # 设置next_bb属性
+            # Set next_bb attribute
             if i < len(bb_labels) - 1:
                 bb.next_bb = bb_labels[i + 1]
             
-            # 解析操作
+            # Parse operations
             op_pattern = r'value (\w*)\s+OP TYPE:(\d+)(.*?)(?=value|$)'
             op_matches = re.finditer(op_pattern, block_content, re.DOTALL)
             
@@ -130,115 +130,115 @@ class CDFG:
                 op_type = int(op_match.group(2))
                 operands_text = op_match.group(3).strip()
                 
-                # 解析操作数
+                # Parse operands
                 operands = []
                 if operands_text:
                     operands = [op.strip() for op in operands_text.split() if op.strip()]
                 
-                # 将操作添加到基本块
+                # Add operation to basic block
                 bb.addOP([value, op_type] + operands)
             
-            # 将基本块添加到CDFG
+            # Add basic block to CDFG
             self.addBasicBlock(bb)
 
     def addBasicBlock(self, basic_block):
         """
-        添加基本块到CDFG
+        Add basic block to CDFG
         
         Args:
-            basic_block: BasicBlock对象
+            basic_block: BasicBlock object
         """
         self.basicBlocks[basic_block.label] = basic_block
         self.cfg.add_node(basic_block.label, block=basic_block)
 
     def generateCFG(self):
         """
-        构建控制流图（CFG）
-        使用NetworkX有向图表示，节点是基本块标签，边表示控制流转移
+        Build Control Flow Graph (CFG)
+        Use NetworkX directed graph, nodes are basic block labels, edges represent control flow transfers
         """
-        # 清除现有边（保留节点）
+        # Clear existing edges (keep nodes)
         self.cfg.clear_edges()
         
-        # 遍历每个基本块，建立控制流边
+        # Traverse each basic block to establish control flow edges
         for label, bb in self.basicBlocks.items():
-            # 如果基本块为空，跳过
+            # Skip if basic block is empty
             if not bb.ops:
                 continue
                 
-            # 获取基本块中的最后一个操作
+            # Get the last operation in the basic block
             last_op = bb.ops[-1]
             
-            # 判断最后一个操作的类型
-            if last_op[1] == 7:  # 分支指令 (OP TYPE:7)
-                if len(last_op) > 3:  # 条件分支
+            # Determine the type of the last operation
+            if last_op[1] == 7:  # Branch instruction (OP TYPE:7)
+                if len(last_op) > 3:  # Conditional branch
                     cond_var = last_op[2]
                     true_target = last_op[3]
                     false_target = last_op[4]
                     
-                    # 添加条件为真的分支
+                    # Add branch for true condition
                     self.cfg.add_edge(label, true_target, condition=cond_var)
                     
-                    # 添加条件为假的分支
+                    # Add branch for false condition
                     self.cfg.add_edge(label, false_target, condition=f"not {cond_var}")
                     
-                elif len(last_op) > 2:  # 无条件跳转
+                elif len(last_op) > 2:  # Unconditional jump
                     target = last_op[2]
                     self.cfg.add_edge(label, target, condition="true")
             else:
-                # 非分支指令，顺序执行到下一个基本块
+                # Non-branch instruction, sequential execution to the next basic block
                 if bb.next_bb:
                     self.cfg.add_edge(label, bb.next_bb, condition="true")
             
     def generateDFGs(self):
-        """为所有基本块构建数据流图"""
+        """Build data flow graphs for all basic blocks"""
         for _, bb in self.basicBlocks.items():
             bb.generateDFG()
         return self.basicBlocks
 
 
 def printCDFG(cdfg, file=None):
-    """打印CDFG的基本信息"""
-    print("===== 函数基本信息 =====", file=file)
-    print(f"函数名: {cdfg.functionName}", file=file)
-    print(f"返回类型: {cdfg.retType}", file=file)
-    print(f"参数: {cdfg.params}", file=file)
+    """Print basic information of CDFG"""
+    print("===== Function Basic Information =====", file=file)
+    print(f"Function name: {cdfg.functionName}", file=file)
+    print(f"Return type: {cdfg.retType}", file=file)
+    print(f"Parameters: {cdfg.params}", file=file)
     print("========================\n", file=file)
 
 
 def printBasicBlocks(cdfg, file=None):
-    """打印所有基本块的信息"""
-    print("===== 基本块信息 =====", file=file)
+    """Print information of all basic blocks"""
+    print("===== Basic Block Information =====", file=file)
     for label, bb in cdfg.basicBlocks.items():
-        print(f"基本块 {label}:", file=file)
-        print(f"\t下一个基本块: {bb.next_bb}", file=file)
+        print(f"Basic block {label}:", file=file)
+        print(f"\tNext basic block: {bb.next_bb}", file=file)
         
-        print("\t操作列表:", file=file)
+        print("\tOperation list:", file=file)
         for i, op in enumerate(bb.ops):
             print(f"\t\t[{i}] {op}", file=file)
     print("===================\n", file=file)
 
 
 def printCFG(cdfg, file=None):
-    """打印控制流图信息"""
-    print("===== 控制流图 (CFG) =====", file=file)
+    """Print control flow graph information"""
+    print("===== Control Flow Graph (CFG) =====", file=file)
     for u, v, data in cdfg.cfg.edges(data=True):
-        print(f"\t{u} -> {v} [条件: {data['condition']}]", file=file)
+        print(f"\t{u} -> {v} [Condition: {data['condition']}]", file=file)
     print("=======================\n", file=file)
 
 
 def printDFG(cdfg, file=None):
-    """打印所有基本块的数据流图信息"""
-    print("===== 数据流图 (DFG) =====", file=file)
+    """Print data flow graph information for all basic blocks"""
+    print("===== Data Flow Graph (DFG) =====", file=file)
     for label, bb in cdfg.basicBlocks.items():
         if len(bb.dfg.edges()) > 0:
-            print(f"\t基本块 {label} 的DFG:", file=file)
+            print(f"\tDFG of basic block {label}:", file=file)
             for u, v, data in bb.dfg.edges(data=True):
                 value = data.get('value', '')
-                print(f"\t\t操作 {u} -> {v} [值: {value}]", file=file)
+                print(f"\t\tOperation {u} -> {v} [Value: {value}]", file=file)
     print("=======================\n", file=file)
 
 def cdfgPrinter(cdfg, file=None):
-    """打印CDFG的基本信息"""
+    """Print basic information of CDFG"""
     printCDFG(cdfg, file)
     printBasicBlocks(cdfg, file)    
     printCFG(cdfg, file)
@@ -246,13 +246,13 @@ def cdfgPrinter(cdfg, file=None):
 
 
 # def main():
-#     """主函数：解析LLVM IR并生成CDFG"""
-#     # 获取文件路径
-#     # 获取命令行参数
+#     """Main function: Parse LLVM IR and generate CDFG"""
+#     # Get file path
+#     # Get command line arguments
 #     if len(sys.argv) > 1:
 #         file_path = sys.argv[1]
 #     else:
-#         # 默认路径
+#         # Default path
 #         print("File path unspecified, using default path: parser/parseResult.txt")
 #         file_path = os.path.join(os.path.dirname(__file__), 'parser', 'parseResult.txt')
     
@@ -265,7 +265,7 @@ def cdfgPrinter(cdfg, file=None):
 
 #     if not cdfg:
 #         return
-#     # 打印CDFG基本信息
+#     # Print CDFG basic information
 #     printCDFG(cdfg)
 #     printBasicBlocks(cdfg)    
 #     printCFG(cdfg)
