@@ -54,9 +54,16 @@
 可以直接得到CDFG、调度结果、全局变量、寄存器生存周期和染色结果等信息。
 - 更改`scheduler.py`中的`schedulePrinter`
 
-## 4.20 
+## 4.20 f7265a1046df242d225cba8afc887fdaba3204fc
 - 改了`cdfgGenerator.py`的注释和输出为英文
 - 在`resourceAllocator.py`中增加对冗余寄存器的合并函数
 - 对`resourceAllocator.py`中重复调用的函数进行删除。对于反复调用函数的问题进行了优化。所有的函数不再采用`return`结果的方法进行数据传递，而是将数据存储在`CDFG`类中。将所有函数整理到同一`registerAllocator`函数中，可以在`main.py`中统一调用。
 - 对输出文件进行名字修改，输出文件名与输入文件相关
 - 将Resource和Delay同一放到`resourceData.py`中
+
+## 4.22 
+- 创建`genFSM.py`，用于从得到的CDFG、调度结果、全局变量、寄存器生存周期和染色结果等信息直接生成verilog代码。
+- `genFSM.py`包含两个类：VerilogSyntax和VerilogGenerator。前者主要用于基本的Verilog语法生成，后者主要用于生成verilog代码。VerilogGenerator主要使用三段式FSM生成进行撰写，主要部分有生成端口变量、生成局部/全局寄存器、根据控制流图生成状态更新逻辑、根据调度结果生成分支逻辑以及生成控制逻辑等内容。
+- `genFSM.py`中同时添加verilogPrinter()方法，用于最后打印verilog代码至指定文件。
+- 修改`main.py`，导入genFSM模块并将VerilogSyntax和VerilogGenerator实例化，并最终在指定路径文件中输出verilog代码。
+- 修改`registerAllocator.py`，添加了printRegisterMerging()方法，用于在`outputFlow.txt`中打印merge过后的寄存器分配情况。

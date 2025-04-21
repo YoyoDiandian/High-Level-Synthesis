@@ -38,10 +38,10 @@ DELAY = [
     1, # OP_ASSIGN
     1, # OP_ADD
     1, # OP_SUB
-    1, # OP_MUL
-    1, # OP_DIV
-    1, # OP_LOAD
-    1, # OP_STORE
+    5, # OP_MUL
+    10, # OP_DIV
+    2, # OP_LOAD
+    2, # OP_STORE
     1, # OP_BR
     1, # OP_LT
     1, # OP_GT

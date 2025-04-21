@@ -296,7 +296,6 @@ def register_coloring(self):
                                 for reg in range(len(self.coloring_result[bb_label]),min_register_required):
                                     self.coloring_result[bb_label][reg] = []
     
-
 def merge_registers(self):
     """
     合并没有时间重叠的寄存器，将高序号寄存器合并到低序号寄存器中
@@ -485,6 +484,23 @@ def printRegisterColoring(self, file=None):
     
     print(35 * "-", file=file)
 
+def printRegisterMerging(self, file=None):
+    """
+        Print register allocation result after merging, using left-edge algorithm.    
+    """
+    print("Register Allocation After Merging:", file=file)
+    # print(coloring_result)
+    for bb_label, bb_reg_dict in self.merged_coloring_result.items():
+        print(f"Basic block {bb_label}: ", file=file)
+        for bb_reg_index, bb_reg_allocation in bb_reg_dict.items():
+            print(f"  Register {bb_reg_index}:", file=file)
+            for bb_reg_allocation_items in bb_reg_allocation:
+                start_cycle = bb_reg_allocation_items[1][0]
+                end_cycle = bb_reg_allocation_items[1][1]
+                print(f"    stores variable\t{bb_reg_allocation_items[0]}\tfrom cycle {start_cycle} to cycle {end_cycle}", file=file)
+    
+    print(35 * "-", file=file)
+
 def registerAllocation(cdfg_obj):
     get_input_output_variables(cdfg_obj)
     get_global_variables(cdfg_obj)
@@ -492,7 +508,6 @@ def registerAllocation(cdfg_obj):
     get_living_period(cdfg_obj)
     register_coloring(cdfg_obj)
     merge_registers(cdfg_obj)
-
 
 def addRegisterAllocation(cdfg_obj, basic_block_obj):
     setattr(basic_block_obj, 'get_bb_operands', {})
@@ -522,6 +537,7 @@ def registerAllocatorPrinter(self, file=None):
     printLocalVariablesLivenessCycle(self, file)
     printLocalVariablesLivenessVariable(self, file)
     printRegisterColoring(self, file)
+    printRegisterMerging(self, file)
     print("\nRegister Usage Statistics:", file=file)
     for bb_label in self.merged_coloring_result:
         initial_regs = len([r for r in self.coloring_result[bb_label] if self.coloring_result[bb_label][r]])
