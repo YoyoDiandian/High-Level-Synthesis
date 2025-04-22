@@ -61,9 +61,14 @@
 - 对输出文件进行名字修改，输出文件名与输入文件相关
 - 将Resource和Delay同一放到`resourceData.py`中
 
-## 4.22 
+## 4.22 b65f4653db758a2d05a464e9ee081c3f339cd1ba
 - 创建`genFSM.py`，用于从得到的CDFG、调度结果、全局变量、寄存器生存周期和染色结果等信息直接生成verilog代码。
 - `genFSM.py`包含两个类：VerilogSyntax和VerilogGenerator。前者主要用于基本的Verilog语法生成，后者主要用于生成verilog代码。VerilogGenerator主要使用三段式FSM生成进行撰写，主要部分有生成端口变量、生成局部/全局寄存器、根据控制流图生成状态更新逻辑、根据调度结果生成分支逻辑以及生成控制逻辑等内容。
 - `genFSM.py`中同时添加verilogPrinter()方法，用于最后打印verilog代码至指定文件。
 - 修改`main.py`，导入genFSM模块并将VerilogSyntax和VerilogGenerator实例化，并最终在指定路径文件中输出verilog代码。
 - 修改`registerAllocator.py`，添加了printRegisterMerging()方法，用于在`outputFlow.txt`中打印merge过后的寄存器分配情况。
+
+## 4.22
+- 修改`registerAllocator.py`中`merge_registers`函数，使其功能更加准确，解决在`sum.ll`实例中错误合并的问题
+- 统一`outputFlow.txt`输出到`output/outputFlow/`文件夹下
+- `main.py`中默认读入文件的改为由`defaultPath`设定，保证终端打印的读入文件和实际读入文件一致

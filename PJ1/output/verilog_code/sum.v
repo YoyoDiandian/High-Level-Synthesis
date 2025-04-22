@@ -19,9 +19,9 @@ module Sum (
 	output	reg done
 );
 	
-	reg [31:0] reg_n;
-	reg [31:0] reg_i;
 	reg [31:0] reg_temp;
+	reg [31:0] reg_i;
+	reg [31:0] reg_n;
 	reg [31:0] reg_0;
 	reg [31:0] reg_1;
 	reg [31:0] reg_2;
@@ -86,6 +86,13 @@ always @(posedge sys_clk or negedge sys_rst_n) begin
 		end
 		else counter <= counter + 1;
 	end
+end
+	
+always @(counter) begin
+
+case (cur_state)
+endcase
+
 end
 	
 endmodule

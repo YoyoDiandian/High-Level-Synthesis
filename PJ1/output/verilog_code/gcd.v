@@ -10,12 +10,12 @@ module gcd (
 	output	reg done
 );
 	
-	reg [31:0] reg_b;
-	reg [31:0] reg_b1;
-	reg [31:0] reg_a1;
 	reg [31:0] reg_remainder;
-	reg [31:0] reg_divisor;
 	reg [31:0] reg_a;
+	reg [31:0] reg_b1;
+	reg [31:0] reg_divisor;
+	reg [31:0] reg_b;
+	reg [31:0] reg_a1;
 	reg [31:0] reg_0;
 	reg [31:0] reg_1;
 	reg [4:0] cur_state;
@@ -99,15 +99,6 @@ end
 always @(counter) begin
 
 case (cur_state)
-	1: begin
-		1
-	end
-	2: begin
-		2
-	end
-	3: begin
-		3
-	end
 endcase
 
 end

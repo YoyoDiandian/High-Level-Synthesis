@@ -227,11 +227,11 @@ def register_coloring(self):
                     if (len(src_coloring[src_reg])>1):
                         src_right_edge = src_coloring[src_reg][-2][-1][-1]
                     else:
-                        src_right_edge = -1
+                        src_right_edge = 0
                     if (len(src_coloring[sink_reg])>1):
                         sink_right_edge = src_coloring[sink_reg][-2][-1][-1]
                     else:
-                        sink_right_edge = -1
+                        sink_right_edge = 0
                     if src_coloring[sink_reg][-1][-1][0] > src_right_edge and src_var[-1][0] > sink_right_edge:
                         temp0 = src_coloring[src_reg].pop()
                         temp1 = src_coloring[sink_reg].pop()
@@ -247,6 +247,7 @@ def register_coloring(self):
                         left_edge = sys.maxsize
                     if sink_var[-1][1] < left_edge:
                         sink_coloring[src_reg].insert(0,sink_var)
+                        sink_coloring[sink_reg].pop(0)
                         settled = 1
                 '''
                 if not settled:
@@ -295,7 +296,7 @@ def register_coloring(self):
                             if min_register_required > len(self.coloring_result[bb_label]):
                                 for reg in range(len(self.coloring_result[bb_label]),min_register_required):
                                     self.coloring_result[bb_label][reg] = []
-    
+   
 def merge_registers(self):
     """
     合并没有时间重叠的寄存器，将高序号寄存器合并到低序号寄存器中
@@ -306,88 +307,103 @@ def merge_registers(self):
     返回:
         merged_coloring_result: 合并后的寄存器分配结果
     """
-    self.merged_coloring_result = {}
+    self.merged_coloring_result = {bb_label: {} for bb_label in self.coloring_result}
+    # 初始化合并后的结果
+    for bb_label in self.coloring_result:
+        self.merged_coloring_result[bb_label] = dict(self.coloring_result[bb_label])
     
-    # 处理每个基本块
+    # 构建变量到寄存器的映射
+    var_to_reg = {} # {变量: {基本块: 寄存器号}}
     for bb_label, bb_coloring in self.coloring_result.items():
-        # 复制原始分配结果
-        merged_bb_coloring = {reg: var_list.copy() for reg, var_list in bb_coloring.items()}
-        
-        # 获取寄存器数量
-        num_registers = len(bb_coloring)
-        
-        # 创建寄存器使用周期列表
-        register_periods = {}
         for reg, var_list in bb_coloring.items():
-            periods = []
             for var, period in var_list:
-                periods.append((period[0], period[1]))
-            register_periods[reg] = periods
-        
-        # 标记已经合并的寄存器
-        merged_registers = set()
-        
-        # 尝试合并寄存器，从低序号寄存器开始
-        for i in range(num_registers - 1):
-            if i in merged_registers:
+                if var not in var_to_reg:
+                    var_to_reg[var] = {}
+                var_to_reg[var][bb_label] = (reg, period)
+                var_to_reg[var]['register'] = (reg, None)
+
+    while True:
+        merged_variable = set()
+         # 遍历每个局部变量
+        continueMerge = False  # 这个变量代表在此次遍历变量的过程中是否产生了寄存器merge，如果产生了则说明coloring result产生了变化，可能有这一轮没被merge的寄存器在变化后能够被merge，因此需要再merge一次
+        for var in var_to_reg:
+            # 获取该变量在各个基本块中的寄存器分配情况
+            bb_assignments = var_to_reg[var]
+            currentRegister = bb_assignments['register'][0] # 当前变量所在的寄存器
+            # 如果本来就在寄存器0，或者是已经被merge过的variable，则跳过
+            if currentRegister == 0 or var in merged_variable:
                 continue
-                
-            # 获取寄存器i的使用周期
-            periods_i = register_periods[i]
             
-            # 检查更高序号的寄存器
-            for j in range(i + 1, num_registers):
-                if j in merged_registers:
+            mergeTowards = [i for i in range(0, currentRegister)] # 候选的寄存器
+
+            # 遍历这个变量在各个基本块中的寄存器及周期
+            for bb_label, (reg, period) in bb_assignments.items():
+                # 遍历这个基本块中的各个寄存器
+                if bb_label == 'register':
                     continue
-                    
-                # 获取寄存器j的使用周期
-                periods_j = register_periods[j]
-                
-                # 检查是否有重叠
-                can_merge = True
-                for start_i, end_i in periods_i:
-                    for start_j, end_j in periods_j:
-                        # 检查周期是否重叠
-                        if not (end_i < start_j or end_j < start_i):
-                            can_merge = False
+                for compared_reg in self.merged_coloring_result[bb_label]:
+                    # 如果这个寄存器的序号大于当前变量的寄存器，或者这个寄存器不在候选列表中，则跳过
+                    if compared_reg >= currentRegister or compared_reg not in mergeTowards:
+                        continue
+                    # 遍历这个基本块中这个寄存器存储的各个变量
+                    for compared_var, compared_period in self.merged_coloring_result[bb_label][compared_reg]:
+                        # 检查是否有时间重叠，有则从候选列表中移除这个寄存器
+                        if var != compared_var and not (period[1] < compared_period[0] or compared_period[1] < period[0]):
+                            # 合并寄存器
+                            mergeTowards.remove(compared_reg)
                             break
-                    if not can_merge:
-                        break
+            
+            # 候选列表中还有存活的寄存器
+            if mergeTowards:
+                continueMerge = True
+                mergeTowardReg = mergeTowards.pop(0)
+                # Remove from old register and add to new register
+                # Update the var_to_reg mapping
+                var_to_reg[var]['register'] = (mergeTowardReg, None)
+                for bb_label in bb_assignments:
+                    if bb_label == 'register':
+                        continue
+                    var_to_reg[var][bb_label] = (mergeTowardReg, var_to_reg[var][bb_label][1])
+                for bb_label in bb_assignments:
+                    if bb_label == 'register':
+                        continue
+                    # Find the variable's data in old register
+                    var_index = None
+                    for i, (var_item, _) in enumerate(self.merged_coloring_result[bb_label][currentRegister]):
+                        if var_item == var:
+                            var_index = i
+                            break
+                    
+                    if var_index is not None:
+                        # Move data to new register
+                        var_data = self.merged_coloring_result[bb_label][currentRegister].pop(var_index)
+                        if mergeTowardReg not in self.merged_coloring_result[bb_label]:
+                            self.merged_coloring_result[bb_label][mergeTowardReg] = []
+                        self.merged_coloring_result[bb_label][mergeTowardReg].append(var_data)
                 
-                # 如果可以合并，将j中的变量移动到i
-                if can_merge:
-                    # 将j的变量添加到i
-                    merged_bb_coloring[i].extend(merged_bb_coloring[j])
-                    # 清空j的变量
-                    merged_bb_coloring[j] = []
-                    # 更新i的使用周期
-                    register_periods[i].extend(periods_j)
-                    # 标记j为已合并
-                    merged_registers.add(j)
-        
-        # 重新整理寄存器分配结果，移除空寄存器
-        compact_bb_coloring = {}
-        reg_idx = 0
-        
-        # 先添加非空寄存器
-        for old_reg, var_list in sorted(merged_bb_coloring.items()):
-            if var_list:
-                compact_bb_coloring[reg_idx] = var_list
-                reg_idx += 1
-        
-        # 保存结果
-        self.merged_coloring_result[bb_label] = compact_bb_coloring
+                merged_variable.add(var)
+                continue            
+        if not continueMerge:
+            break
     
-    # 确保所有基本块使用相同数量的寄存器
-    max_registers = 0
-    for bb_coloring in self.merged_coloring_result.values():
-        max_registers = max(max_registers, len(bb_coloring))
-    
+    # Remove empty registers
     for bb_label in self.merged_coloring_result:
-        for reg in range(len(self.merged_coloring_result[bb_label]), max_registers):
+        # Create new dict without empty registers
+        non_empty = {reg: vars for reg, vars in self.merged_coloring_result[bb_label].items() if vars}
+        
+        # Reassign register numbers sequentially
+        new_coloring = {}
+        for new_reg, (old_reg, vars) in enumerate(sorted(non_empty.items())):
+            new_coloring[new_reg] = vars
+            
+        self.merged_coloring_result[bb_label] = new_coloring
+
+    # Ensure all basic blocks have same number of registers
+    max_regs = max(len(bb_coloring) for bb_coloring in self.merged_coloring_result.values())
+    for bb_label in self.merged_coloring_result:
+        for reg in range(len(self.merged_coloring_result[bb_label]), max_regs):
             self.merged_coloring_result[bb_label][reg] = []
-    
-    # return self.merged_coloring_result
+                # 将该变量的寄存器合并到目标寄存器
 
 def printInputVariables(self, file=None):
     """
@@ -539,9 +555,7 @@ def registerAllocatorPrinter(self, file=None):
     printRegisterColoring(self, file)
     printRegisterMerging(self, file)
     print("\nRegister Usage Statistics:", file=file)
-    for bb_label in self.merged_coloring_result:
-        initial_regs = len([r for r in self.coloring_result[bb_label] if self.coloring_result[bb_label][r]])
-        merged_regs = len([r for r in self.merged_coloring_result[bb_label] if self.merged_coloring_result[bb_label][r]])
-        savings = initial_regs - merged_regs
-        print(f"  Basic block {bb_label}: Initial: {initial_regs}, After merging: {merged_regs}, Saved: {savings} registers", file=file)
+    print(f"Total registers needed: {len(self.merged_coloring_result['0']) + len(self.global_variable)}", file=file)
+    print(f"Global registers needed: {len(self.global_variable)}", file=file)
+    print(f"Local registers needed: {len(self.merged_coloring_result['0'])}", file=file)
     print("=====================================\n", file=file)

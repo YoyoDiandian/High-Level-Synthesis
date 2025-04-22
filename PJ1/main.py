@@ -11,18 +11,19 @@ def main():
     Main function: Parse LLVM IR, generate CDFG, schedule operations, 
     and allocate registers with register merging optimization.
     """
+    defaultPath = "dotprod_parseResult.txt"
     if len(sys.argv) > 1:
         inputFile = sys.argv[1]
     else:
-        print("File path unspecified, using default path: output/parseResult/dotprod_parseResult.txt")
-        inputFile = os.path.join(os.path.dirname(__file__), 'output', 'parseResult', 'dotprod_parseResult.txt')
+        print("File path unspecified, using default path: output/parseResult/" + defaultPath)
+        inputFile = os.path.join(os.path.dirname(__file__), 'output', 'parseResult', defaultPath)
     try:
         name = inputFile[inputFile.rindex('/')+1:inputFile.rindex('_')]
     except Exception as e:
         print(f"Input file name must be a parse result file")
         sys.exit(1)
     
-    outputFile = os.path.join(os.path.dirname(__file__), 'output', name + '_outputFlow.txt')
+    outputFile = os.path.join(os.path.dirname(__file__), 'output', 'outputFlow', name + '_outputFlow.txt')
     verilogFile = os.path.join(os.path.dirname(__file__), 'output', 'verilog_code', name + '.v')
 
     # Create CDFG object and parse LLVM IR

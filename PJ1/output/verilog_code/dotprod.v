@@ -19,9 +19,9 @@ module dotprod (
 	output	reg done
 );
 	
-	reg [31:0] reg_cl;
 	reg [31:0] reg_i;
 	reg [31:0] reg_n;
+	reg [31:0] reg_cl;
 	reg [31:0] reg_0;
 	reg [31:0] reg_1;
 	reg [31:0] reg_2;
