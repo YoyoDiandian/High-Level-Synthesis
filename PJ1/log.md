@@ -1,6 +1,6 @@
-# 高层次综合
+# High Level Synthesis
 
-## 日志
+## Log
 
 ### 4.13 7d0aa1e35c641c45da399ede003244ad610a8026
 - 添加PJ1的作业描述
@@ -68,7 +68,10 @@
 - 修改`main.py`，导入genFSM模块并将VerilogSyntax和VerilogGenerator实例化，并最终在指定路径文件中输出verilog代码。
 - 修改`registerAllocator.py`，添加了printRegisterMerging()方法，用于在`outputFlow.txt`中打印merge过后的寄存器分配情况。
 
-## 4.22
+## 4.22 5dae65de8bfeca9e9d5a4014b647efff854d4b78
 - 修改`registerAllocator.py`中`merge_registers`函数，使其功能更加准确，解决在`sum.ll`实例中错误合并的问题
 - 统一`outputFlow.txt`输出到`output/outputFlow/`文件夹下
 - `main.py`中默认读入文件的改为由`defaultPath`设定，保证终端打印的读入文件和实际读入文件一致
+
+## 4.22
+- 更新`README.md`
