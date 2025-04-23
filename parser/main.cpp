@@ -8,6 +8,14 @@ int main(int argc, char ** argv)
         std::cout << "Usage: " << argv[0] << " input_filename output_filename\n";
         return -1;
     }
+    // Create directories if they don't exist
+    std::string outputPath(argv[2]);
+    size_t pos = outputPath.find_last_of("/\\");
+    if (pos != std::string::npos) {
+        std::string dir = outputPath.substr(0, pos);
+        std::string cmd = "mkdir -p \"" + dir + "\"";
+        system(cmd.c_str());
+    }
     std::ofstream parserOutput(argv[2]);
     // if(argc != 2)
     // {

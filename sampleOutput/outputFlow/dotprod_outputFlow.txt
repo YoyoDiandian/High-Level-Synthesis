@@ -1,5 +1,5 @@
 ===== Function Basic Information =====
-Function name: Sum
+Function name: dotprod
 Return type: int
 Parameters: [('a', 'array'), ('b', 'array'), ('n', 'non-array')]
 ========================
@@ -13,23 +13,22 @@ Basic block start:
 	Next basic block: calc
 	Operation list:
 		[0] ['i', 13, '0', '0', 'i_inc', 'calc']
-		[1] ['sum', 13, 'c', '0', 'temp', 'calc']
+		[1] ['cl', 13, 'c', '0', 'cr', 'calc']
 		[2] ['cond', 11, 'i', 'n']
 		[3] ['', 7, 'cond', 'ret', 'calc']
 Basic block calc:
 	Next basic block: ret
 	Operation list:
 		[0] ['ai', 5, 'a', 'i']
-		[1] ['temp', 1, 'sum', 'ai']
-		[2] ['', 6, 'b', 'i', 'temp']
-		[3] ['i_inc', 1, 'i', '1']
-		[4] ['', 7, 'start']
+		[1] ['bi', 5, 'b', 'i']
+		[2] ['ci', 3, 'ai', 'bi']
+		[3] ['cr', 1, 'cl', 'ci']
+		[4] ['i_inc', 1, 'i', '1']
+		[5] ['', 7, 'start']
 Basic block ret:
 	Next basic block: None
 	Operation list:
-		[0] ['num', 2, 'n', '1']
-		[1] ['res', 5, 'b', 'num']
-		[2] ['', 14, 'res']
+		[0] ['', 14, 'cl']
 ===================
 
 ===== Control Flow Graph (CFG) =====
@@ -44,11 +43,9 @@ Basic block ret:
 		Operation 0 -> 2 [Value: i]
 		Operation 2 -> 3 [Value: cond]
 	DFG of basic block calc:
-		Operation 0 -> 1 [Value: ai]
-		Operation 1 -> 2 [Value: temp]
-	DFG of basic block ret:
-		Operation 0 -> 1 [Value: num]
-		Operation 1 -> 2 [Value: res]
+		Operation 0 -> 2 [Value: ai]
+		Operation 1 -> 2 [Value: bi]
+		Operation 2 -> 3 [Value: ci]
 =======================
 
 ===== Schedule Results =====
@@ -59,16 +56,18 @@ Basic block start's schedule results:
   cycle 1: (operation 1, resource 0) (operation 2, resource 0) 
   cycle 2: (operation 3, resource 0) 
 Basic block calc's schedule results:
-  cycle 0: (operation 0, resource 0) (operation 3, resource 0) (operation 4, resource 0) 
+  cycle 0: (operation 0, resource 0) (operation 4, resource 0) (operation 5, resource 0) 
   cycle 1: 
   cycle 2: (operation 1, resource 0) 
-  cycle 3: (operation 2, resource 0) 
-  cycle 4: 
+  cycle 3: 
+  cycle 4: (operation 2, resource 0) 
+  cycle 5: 
+  cycle 6: 
+  cycle 7: 
+  cycle 8: 
+  cycle 9: (operation 3, resource 0) 
 Basic block ret's schedule results:
   cycle 0: (operation 0, resource 0) 
-  cycle 1: (operation 1, resource 0) 
-  cycle 2: 
-  cycle 3: (operation 2, resource 0) 
 ===================================
 
 ===== Initial Register Allocation =====
@@ -76,47 +75,49 @@ Input variables:
 Basic block 0:
 No input variables in this block.  
 Basic block start:
-i_inc  c  
+i_inc  c  cr  
 Basic block calc:
-sum  
+cl  
 Basic block ret:
-sum  
+cl  
 -----------------------------------
 Output variables:
 Basic block 0:
 c  
 Basic block start:
-sum  
+cl  
 Basic block ret:
-sum  
+No output variables in this block.  
 Basic block calc:
-i_inc  
+i_inc  cr  
 -----------------------------------
 Global Variables:
-i  temp
+i  cl
 -----------------------------------
 Getting Local Variable Liveness:
 Basic block 0: 
   cycle 0, there's no variable living in this cycle.
   cycle 1, variable	c	is living.
 Basic block start: 
-  cycle 0, variable	i_inc, c	is living.
-  cycle 1, variable	c	is living.
-  cycle 2, variable	sum, cond	is living.
-  cycle 3, variable	sum	is living.
+  cycle 0, variable	i_inc, c, cr	is living.
+  cycle 1, variable	cr, c	is living.
+  cycle 2, variable	cond	is living.
+  cycle 3, there's no variable living in this cycle.
 Basic block calc: 
-  cycle 0, variable	sum	is living.
-  cycle 1, variable	sum, i_inc, ai	is living.
-  cycle 2, variable	sum, i_inc, ai	is living.
-  cycle 3, variable	i_inc	is living.
-  cycle 4, variable	i_inc	is living.
-  cycle 5, variable	i_inc	is living.
+  cycle 0, there's no variable living in this cycle.
+  cycle 1, variable	ai, i_inc	is living.
+  cycle 2, variable	ai, i_inc	is living.
+  cycle 3, variable	ai, bi, i_inc	is living.
+  cycle 4, variable	ai, bi, i_inc	is living.
+  cycle 5, variable	ci, i_inc	is living.
+  cycle 6, variable	ci, i_inc	is living.
+  cycle 7, variable	ci, i_inc	is living.
+  cycle 8, variable	ci, i_inc	is living.
+  cycle 9, variable	ci, i_inc	is living.
+  cycle 10, variable	i_inc, cr	is living.
 Basic block ret: 
-  cycle 0, variable	sum	is living.
-  cycle 1, variable	sum, num	is living.
-  cycle 2, variable	sum, res	is living.
-  cycle 3, variable	sum, res	is living.
-  cycle 4, variable	sum	is living.
+  cycle 0, there's no variable living in this cycle.
+  cycle 1, there's no variable living in this cycle.
 -----------------------------------
 Getting Living Period for every local variable:
 Basic block 0: 
@@ -124,16 +125,16 @@ Basic block 0:
 Basic block start: 
   Variable	i_inc	lives from cycle 0 to cycle 0
   Variable	c	lives from cycle 0 to cycle 1
-  Variable	sum	lives from cycle 2 to cycle 3
+  Variable	cr	lives from cycle 0 to cycle 1
   Variable	cond	lives from cycle 2 to cycle 2
 Basic block calc: 
-  Variable	sum	lives from cycle 0 to cycle 2
-  Variable	i_inc	lives from cycle 1 to cycle 5
-  Variable	ai	lives from cycle 1 to cycle 2
+  Variable	ai	lives from cycle 1 to cycle 4
+  Variable	i_inc	lives from cycle 1 to cycle 10
+  Variable	bi	lives from cycle 3 to cycle 4
+  Variable	ci	lives from cycle 5 to cycle 9
+  Variable	cr	lives from cycle 10 to cycle 10
 Basic block ret: 
-  Variable	sum	lives from cycle 0 to cycle 4
-  Variable	num	lives from cycle 1 to cycle 1
-  Variable	res	lives from cycle 2 to cycle 3
+  No variable living in this basic block.
 -----------------------------------
 Register Allocation:
 Basic block 0: 
@@ -141,28 +142,31 @@ Basic block 0:
     stores variable	c	from cycle 1 to cycle 1
   Register 1:
   Register 2:
+  Register 3:
 Basic block start: 
   Register 0:
-    stores variable	sum	from cycle 2 to cycle 3
+    stores variable	cond	from cycle 2 to cycle 2
     stores variable	c	from cycle 0 to cycle 1
   Register 1:
-    stores variable	cond	from cycle 2 to cycle 2
+    stores variable	cr	from cycle 0 to cycle 1
   Register 2:
     stores variable	i_inc	from cycle 0 to cycle 0
+  Register 3:
 Basic block calc: 
   Register 0:
-    stores variable	sum	from cycle 0 to cycle 2
+    stores variable	ai	from cycle 1 to cycle 4
+    stores variable	ci	from cycle 5 to cycle 9
   Register 1:
-    stores variable	ai	from cycle 1 to cycle 2
+    stores variable	cr	from cycle 10 to cycle 10
+    stores variable	bi	from cycle 3 to cycle 4
   Register 2:
-    stores variable	i_inc	from cycle 1 to cycle 5
+    stores variable	i_inc	from cycle 1 to cycle 10
+  Register 3:
 Basic block ret: 
   Register 0:
-    stores variable	sum	from cycle 0 to cycle 4
   Register 1:
-    stores variable	num	from cycle 1 to cycle 1
-    stores variable	res	from cycle 2 to cycle 3
   Register 2:
+  Register 3:
 -----------------------------------
 Register Allocation After Merging:
 Basic block 0: 
@@ -172,25 +176,24 @@ Basic block 0:
   Register 2:
 Basic block start: 
   Register 0:
-    stores variable	sum	from cycle 2 to cycle 3
+    stores variable	cond	from cycle 2 to cycle 2
     stores variable	c	from cycle 0 to cycle 1
   Register 1:
-    stores variable	cond	from cycle 2 to cycle 2
+    stores variable	cr	from cycle 0 to cycle 1
   Register 2:
     stores variable	i_inc	from cycle 0 to cycle 0
 Basic block calc: 
   Register 0:
-    stores variable	sum	from cycle 0 to cycle 2
+    stores variable	ai	from cycle 1 to cycle 4
+    stores variable	ci	from cycle 5 to cycle 9
   Register 1:
-    stores variable	ai	from cycle 1 to cycle 2
+    stores variable	cr	from cycle 10 to cycle 10
+    stores variable	bi	from cycle 3 to cycle 4
   Register 2:
-    stores variable	i_inc	from cycle 1 to cycle 5
+    stores variable	i_inc	from cycle 1 to cycle 10
 Basic block ret: 
   Register 0:
-    stores variable	sum	from cycle 0 to cycle 4
   Register 1:
-    stores variable	num	from cycle 1 to cycle 1
-    stores variable	res	from cycle 2 to cycle 3
   Register 2:
 -----------------------------------
 

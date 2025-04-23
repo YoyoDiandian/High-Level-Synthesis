@@ -6,9 +6,9 @@ module gcd (
 	input	sys_rst_n
 );
 	
+	reg [31:0] reg_divisor;
 	reg [31:0] reg_remainder;
 	reg [31:0] reg_b1;
-	reg [31:0] reg_divisor;
 	reg [31:0] reg_a1;
 	reg [31:0] reg_0;
 	reg [31:0] reg_1;
@@ -31,9 +31,9 @@ always @(posedge sys_clk or negedge sys_rst_n) begin
 	if (!sys_rst_n) begin
 		reg_0 <= 32'bx;
 		reg_1 <= 32'bx;
+		reg_divisor <= 32'bx;
 		reg_remainder <= 32'bx;
 		reg_b1 <= 32'bx;
-		reg_divisor <= 32'bx;
 		reg_a1 <= 32'bx;
 		ret <= 32'bz;
 		counter <= 32'b0;

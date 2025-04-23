@@ -103,7 +103,7 @@ Basic block ret:
 No output variables in this block.  
 -----------------------------------
 Global Variables:
-remainder  b1  divisor  a1
+divisor  remainder  b1  a1
 -----------------------------------
 Getting Local Variable Liveness:
 Basic block 0: 

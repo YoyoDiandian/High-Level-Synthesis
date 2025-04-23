@@ -314,13 +314,14 @@ def merge_registers(self):
     
     # 构建变量到寄存器的映射
     var_to_reg = {} # {变量: {基本块: 寄存器号}}
+    vars_reg = {}
     for bb_label, bb_coloring in self.coloring_result.items():
         for reg, var_list in bb_coloring.items():
             for var, period in var_list:
                 if var not in var_to_reg:
                     var_to_reg[var] = {}
                 var_to_reg[var][bb_label] = (reg, period)
-                var_to_reg[var]['register'] = (reg, None)
+                vars_reg[var] = reg
 
     while True:
         merged_variable = set()
@@ -329,7 +330,7 @@ def merge_registers(self):
         for var in var_to_reg:
             # 获取该变量在各个基本块中的寄存器分配情况
             bb_assignments = var_to_reg[var]
-            currentRegister = bb_assignments['register'][0] # 当前变量所在的寄存器
+            currentRegister = vars_reg[var] # 当前变量所在的寄存器
             # 如果本来就在寄存器0，或者是已经被merge过的variable，则跳过
             if currentRegister == 0 or var in merged_variable:
                 continue
@@ -339,8 +340,6 @@ def merge_registers(self):
             # 遍历这个变量在各个基本块中的寄存器及周期
             for bb_label, (reg, period) in bb_assignments.items():
                 # 遍历这个基本块中的各个寄存器
-                if bb_label == 'register':
-                    continue
                 for compared_reg in self.merged_coloring_result[bb_label]:
                     # 如果这个寄存器的序号大于当前变量的寄存器，或者这个寄存器不在候选列表中，则跳过
                     if compared_reg >= currentRegister or compared_reg not in mergeTowards:
@@ -359,14 +358,9 @@ def merge_registers(self):
                 mergeTowardReg = mergeTowards.pop(0)
                 # Remove from old register and add to new register
                 # Update the var_to_reg mapping
-                var_to_reg[var]['register'] = (mergeTowardReg, None)
+                vars_reg[var] = mergeTowardReg
                 for bb_label in bb_assignments:
-                    if bb_label == 'register':
-                        continue
                     var_to_reg[var][bb_label] = (mergeTowardReg, var_to_reg[var][bb_label][1])
-                for bb_label in bb_assignments:
-                    if bb_label == 'register':
-                        continue
                     # Find the variable's data in old register
                     var_index = None
                     for i, (var_item, _) in enumerate(self.merged_coloring_result[bb_label][currentRegister]):

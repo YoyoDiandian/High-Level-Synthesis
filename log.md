@@ -86,3 +86,10 @@
 
 ## 4.23
 - 整体进行微调
+
+## 4.23
+- 整体把所有文件提到根目录下，去除PJ1目录
+- 微调`genFSM.py`，生成的Verilog文件从`example/testbench/`目录下读取SRAM
+- 更新`autorun.sh`，可以一步到位生成波形文件，outputFlow、parseResult、verilog_code、waveform分别放在四个目录下，不含其他杂质。可以定义输出目录，默认为`output/`
+- 删除现有`output`目录改为`sampleOutput`，存放三个文件的输出。
+- 修改`main.py`，可以指定输出文件目录，当无指定的输出目录时，默认为输入文件的爷爷目录

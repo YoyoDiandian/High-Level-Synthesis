@@ -6,7 +6,7 @@ A toolset for High-Level Synthesis (HLS) and register allocation optimization in
 
 High-Level Synthesis is a toolset that transforms high-level programming languages (C-like) into hardware description languages and optimizes register allocation to improve circuit performance and resource utilization.
 
-The project implements a complete workflow from LLVM IR to hardware description languages, including a sophisticated register allocation algorithm that ensures variable continuity across basic blocks.
+The project implements a complete workflow from LLVM IR to hardware description languages, including a sophisticated register allocation algorithm that ensures variable continuity across basic blocks. Sample outputs demonstrating the workflow, including scheduling results, generated RTL code, and simulation waveforms, are provided in the `sampleOutput` directory.
 
 ## Key Features
 
@@ -58,70 +58,78 @@ The project implements a complete workflow from LLVM IR to hardware description 
 
 ### Basic Usage
 
-1. Prepare your LLVM IR file (.ll format) and place it in the `example` directory
+### Basic Usage
 
-2. Run the autorun program:
+1. Prepare your LLVM IR file (`.ll` format):
+   - Place the `.ll` file in the `example` directory
+   - Place your Verilog testbench file in `example/testbench/your_file_tb.v`
+
+2. Run the automated workflow:
    ```bash
-   sh autorun.sh example/your_file.ll
+   sh autorun.sh example/your_file.ll [output_directory]
    ```
+   Note: `output_directory` is optional (defaults to `output/`)
 
-3. View the results:
+3. Check results in the output directory
+
+### Manual Step-by-Step Usage
+
+1. Prepare input files as described above
+
+2. Build the parser:
    ```bash
-   cat output/parseResult/your_file_parseResult.txt
-   cat output/outputFlow/your_file_outputFlow.txt
-   open output/wave/your_file_wave.vcd
-   ```
-
-### Generate Usage
-
-1. Prepare your LLVM IR file (.ll format) and place it in the `example` directory
-
-2. Enter parser directory:
-   ```bash
+   cd parser
    make
    ```
 
-3. Generate parsed file:
+3. Parse LLVM IR:
    ```bash
-   ./hls ../example/your_file.ll ../output/parseResult/your_file_parseResult.txt
+   ./hls ../example/your_file.ll ../output_directory/parseResult/your_file_parseResult.txt
    ```
 
-4. Run main python file:
-    ```bash
-    cd ..
-    python main.py output/parseResult/your_file_parseResult.txt
-    ```
+4. Run HLS:
+   ```bash
+   cd ..
+   python main.py output_directory/parseResult/your_file_parseResult.txt
+   ```
+   Note: Results will be generated in the grandparent directory of the parse result file
 
-5. Compile Verilog file:
-    ```bash
-    sh compiler.sh output/verilog_code/you_file.v
-    ```
+5. Simulate generated Verilog:
+   ```bash
+   cd output_directory/verilog_code
+   iverilog -o wave your_file.v ../../example/testbench/your_file_tb.v
+   vvp -n wave
+   ```
+   The waveform will be available at `output_directory/verilog_code/your_file_wave.vcd`
 
 ## Project Structure
 
 ```
 .
-├── example/            # Example LLVM IR files
-│   ├── dotprod.ll
-│   ├── gcd.ll
-│   └── sum.ll
-├── hls/                # High-level synthesis core code
-│   ├── resourceData    # Resource and storage data
-│   ├── cdfgGenerator.py     # CDFG generation module
-│   ├── genFSM.py       # FSM generation module
-│   ├── scheduler.py    # Operation scheduling module
-│   ├── registerAllocator.py  # Register allocation module
-│   └── IO port.md      # IO port information
-├── output/             # Output directory
-│   ├── outputFlow/     # Output flow information
-│   ├── parseResult/    # Parse result information
-│   └── verilog_code/   # Generated Verilog code
-├── parser/             # Parser tool
-│   ├── main.cpp        # Main parser file
-│   └── ...
-├── main.py             # Main program entry
-├── autorun.sh          # General code runner
-└── README.md           # Project documentation
+├── example/            # Example LLVM IR files and testbenches
+│   ├── dotprod.ll     # Dot product example
+│   ├── gcd.ll         # Greatest common divisor example
+│   ├── sum.ll         # Sum array example
+│   └── testbench/     # Verilog testbench files
+├── hls/               # High-level synthesis core implementation
+│   ├── resourceData/  # Resource constraints and storage definitions
+│   ├── cdfgGenerator.py     # Control Data Flow Graph generator
+│   ├── genFSM.py      # Finite State Machine generator
+│   ├── scheduler.py    # Operation scheduling algorithms
+│   ├── registerAllocator.py # Register allocation optimization
+│   └── IO port.md     # IO port specifications
+├── sampleOutput/      # Sample generated output files
+│   ├── outputFlow/    # Scheduling and allocation results
+│   ├── parseResult/   # LLVM IR parsing results
+│   ├── verilog_code/  # Generated Verilog RTL code
+│   └── waveform/      # Simulation waveforms
+├── parser/            # LLVM IR parser implementation
+│   ├── Makefile      # Parser build script
+│   ├── main.cpp      # Parser main program
+│   └── src/          # Parser source files
+├── main.py           # Project main entry point
+├── autorun.sh        # Automation script
+└── README.md         # Project documentation
 ```
 
 ## Example Run
@@ -132,7 +140,7 @@ Here's an example of running the tool with the sample file `dotprod.ll`:
 sh autorun.sh example/dotprod.ll
 ```
 
-The output containing basic block information, scheduling results, and register allocation results can be viewed in `output/outputFlow/dotprod.txt`. The generated RTL code can be viewed in `output/verilog_code/dotprod.v`. The wave can be viewed in `output/wave/dotprod.vcd`
+The output containing basic block information, scheduling results, and register allocation results can be viewed in `output/outputFlow/dotprod.txt`. The generated RTL code can be viewed in `output/verilog_code/dotprod.v`. The wave can be viewed in `output/waveform/dotprod.vcd`
 
 ## Example File: dotprod.ll
 

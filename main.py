@@ -12,19 +12,31 @@ def main():
     and allocate registers with register merging optimization.
     """
     defaultPath = "dotprod_parseResult.txt"
-    if len(sys.argv) > 1:
+    if len(sys.argv) > 3:
+        print("Too many arguments, please specify only the input file and optional output path.")
+        sys.exit(1)
+    elif len(sys.argv) > 1:
         inputFile = sys.argv[1]
+        if len(sys.argv) == 3:
+            outputPath = sys.argv[2]
+            print(f"Output path specified: {outputPath}")
+        else: 
+            outputPath = os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[1])))
     else:
-        print("File path unspecified, using default path: output/parseResult/" + defaultPath)
-        inputFile = os.path.join(os.path.dirname(__file__), 'output', 'parseResult', defaultPath)
+        print("File path unspecified, using default path: sampleOutput/parseResult/" + defaultPath)
+        outputPath = 'sampleOutput'
+        inputFile = os.path.join(os.path.dirname(__file__), outputPath, 'parseResult', defaultPath)
     try:
         name = inputFile[inputFile.rindex('/')+1:inputFile.rindex('_')]
     except Exception as e:
         print(f"Input file name must be a parse result file")
         sys.exit(1)
     
-    outputFile = os.path.join(os.path.dirname(__file__), 'output', 'outputFlow', name + '_outputFlow.txt')
-    verilogFile = os.path.join(os.path.dirname(__file__), 'output', 'verilog_code', name + '.v')
+    # Create output directories if they don't exist
+    os.makedirs(os.path.join(os.path.dirname(__file__), outputPath, 'outputFlow'), exist_ok=True)
+    os.makedirs(os.path.join(os.path.dirname(__file__), outputPath, 'verilog_code'), exist_ok=True)
+    outputFile = os.path.join(os.path.dirname(__file__), outputPath, 'outputFlow', name + '_outputFlow.txt')
+    verilogFile = os.path.join(os.path.dirname(__file__), outputPath, 'verilog_code', name + '.v')
 
     # Create CDFG object and parse LLVM IR
     cdfg = CDFG()
@@ -55,25 +67,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
-#     content = """
-# module count4 (
-#     out,
-#     reset,
-#     clk
-# );
-#     output [3:0] out;
-#     input reset, clk;
-#     reg [3:0] out;
-
-# always@(posedge clk) begin
-#     if(reset)
-#         out <= 0;
-#     else
-#         out <= out + 1;
-# end
-
-# endmodule
-#     """
