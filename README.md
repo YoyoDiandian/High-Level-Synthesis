@@ -56,7 +56,14 @@ The project implements a complete workflow from LLVM IR to hardware description 
 
 ## Usage
 
-### Basic Usage
+### Running Tests
+
+Execute the test suite from the project root directory:
+```bash
+sh test.sh
+```
+
+This will run all automated tests to verify the functionality of the HLS toolset. The output will under `testOutput/` directory
 
 ### Basic Usage
 
@@ -122,10 +129,11 @@ The project implements a complete workflow from LLVM IR to hardware description 
 │   ├── outputFlow/    # Scheduling and allocation results
 │   ├── parseResult/   # LLVM IR parsing results
 │   ├── verilog_code/  # Generated Verilog RTL code
-│   └── waveform/      # Simulation waveforms
+│   └── waveform/      # Simulation waveforms (vcd files)
 ├── parser/            # LLVM IR parser implementation
 │   ├── Makefile      # Parser build script
 │   ├── main.cpp      # Parser main program
+│   ├── hls           # Execution file
 │   └── src/          # Parser source files
 ├── main.py           # Project main entry point
 ├── autorun.sh        # Automation script
@@ -137,7 +145,7 @@ The project implements a complete workflow from LLVM IR to hardware description 
 Here's an example of running the tool with the sample file `dotprod.ll`:
 
 ```bash
-sh autorun.sh example/dotprod.ll
+sh autorun.sh example/dotprod.ll output/
 ```
 
 The output containing basic block information, scheduling results, and register allocation results can be viewed in `output/outputFlow/dotprod.txt`. The generated RTL code can be viewed in `output/verilog_code/dotprod.v`. The wave can be viewed in `output/waveform/dotprod.vcd`

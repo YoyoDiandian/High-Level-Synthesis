@@ -1,5 +1,6 @@
 import sys
 import os
+import time
 sys.path.append(os.path.join(os.path.dirname(__file__), 'hls'))
 from hls.scheduler import addScheduler, schedulePrinter
 from hls.cdfgGenerator import CDFG, BasicBlock, cdfgPrinter
@@ -11,6 +12,7 @@ def main():
     Main function: Parse LLVM IR, generate CDFG, schedule operations, 
     and allocate registers with register merging optimization.
     """
+    start = time.time()
     defaultPath = "dotprod_parseResult.txt"
     if len(sys.argv) > 3:
         print("Too many arguments, please specify only the input file and optional output path.")
@@ -64,6 +66,8 @@ def main():
 
     with open(verilogFile, 'w') as vf:
         verilogPrinter(verilog_generator, vf)
+    end = time.time()
+    print(f"Total time taken: {end - start:.10f} seconds")
 
 if __name__ == "__main__":
     main()

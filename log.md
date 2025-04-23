@@ -73,7 +73,7 @@
 - 统一`outputFlow.txt`输出到`output/outputFlow/`文件夹下
 - `main.py`中默认读入文件的改为由`defaultPath`设定，保证终端打印的读入文件和实际读入文件一致
 
-## 4.22
+## 4.22 e6cdbaa1c3532aac2823cdfd9fdb024446ccdb07
 - 更新`README.md`
 
 ## 4.23 5504d4b253f2b1facc376f4fb2ccaa571289a8b9
@@ -84,12 +84,18 @@
 - 修改`registerAllocator.py`中的`get_global_variables`method，将输出变量从全局寄存器中删去（否则在之后生成verilog代码中会在input wire和reg中重复生成该变量，导致问题）
 - 在`resourceData.py`中定义数值到常量名称的映射。
 
-## 4.23
+## 4.23 00f2c657eae549887efc7cd7e4d69ada5f4be14d
 - 整体进行微调
 
-## 4.23
+## 4.23 33f2aa459e0d7cb0d1c8ac64b37a16fade940c65
 - 整体把所有文件提到根目录下，去除PJ1目录
 - 微调`genFSM.py`，生成的Verilog文件从`example/testbench/`目录下读取SRAM
 - 更新`autorun.sh`，可以一步到位生成波形文件，outputFlow、parseResult、verilog_code、waveform分别放在四个目录下，不含其他杂质。可以定义输出目录，默认为`output/`
 - 删除现有`output`目录改为`sampleOutput`，存放三个文件的输出。
 - 修改`main.py`，可以指定输出文件目录，当无指定的输出目录时，默认为输入文件的爷爷目录
+
+## 4.23 
+- 添加parser下的`./hls`，可以直接调用。如果`./hls`不存在再make。可以节省时间。删掉`make clean`，让`hls`可执行文件反复使用
+- 在`main.py`中增加运行时间的输出
+- 增加`test.sh`，自动运行三个测试文件，并将输出存储在`testOutput`目录下。在`README.md`中添加这一部分的描述。
+- 修改`autorun.sh`中关于输出目录最后`/`符号的问题。

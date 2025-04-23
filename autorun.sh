@@ -21,7 +21,7 @@ BASENAME=$(basename "$INPUT_FILE" .ll)
 PARSER_DIR="parser"
 EXAMPLE_DIR="example"
 if [ $# -eq 2 ]; then
-    OUTPUT_DIR="$2"
+    OUTPUT_DIR="${2%/}"
 else
     OUTPUT_DIR="output"
     echo "Notice: No output directory specified. Using default: $OUTPUT_DIR"
@@ -51,15 +51,15 @@ echo "============================="
 echo "Step 1: Running parser..."
 echo "============================="
 cd "$ROOT_DIR/$PARSER_DIR"
-if ! make; then
-    echo "Error: Make failed"
-    exit 1
-fi
 
 if ! ./hls "$ROOT_DIR/$INPUT_FILE" "$ROOT_DIR/$PARSE_RESULT_PATH"; then
-    echo "Error: Parser execution failed"
+    echo "First attempt failed. Running make clean and rebuilding..."
     make clean
-    exit 1
+    make
+    if ! ./hls "$ROOT_DIR/$INPUT_FILE" "$ROOT_DIR/$PARSE_RESULT_PATH"; then
+        echo "Error: Parser execution failed after rebuild"
+        exit 1
+    fi
 fi
 
 echo "✅ Parser completed successfully"
@@ -84,17 +84,8 @@ echo "Verilog file generated at: $VERILOG_FILE"
 
 echo ""
 echo "============================="
-echo "Step 3: Cleaning up parser..."
+echo "Step 3: Compiling Verilog code..."
 echo "============================="
-cd "$ROOT_DIR/$PARSER_DIR"
-make clean
-echo "✅ Cleanup completed"
-
-echo ""
-echo "============================="
-echo "Step 4: Compiling Verilog code..."
-echo "============================="
-cd "$ROOT_DIR"
 if ! iverilog -o "$WAVE_OUTPUT" "$VERILOG_FILE" "$TESTBENCH_FILE"; then
     echo "Error: Verilog compilation failed"
     exit 1
@@ -103,7 +94,7 @@ echo "✅ Verilog compilation completed"
 
 echo ""
 echo "============================="
-echo "Step 5: Generating waveform file..."
+echo "Step 4: Generating waveform file..."
 echo "============================="
 cd "$ROOT_DIR/$WAVE_PATH"
 if ! vvp -n "$(basename "$WAVE_OUTPUT")"; then
