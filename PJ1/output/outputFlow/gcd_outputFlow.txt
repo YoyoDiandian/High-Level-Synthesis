@@ -103,7 +103,7 @@ Basic block ret:
 No output variables in this block.  
 -----------------------------------
 Global Variables:
-remainder  divisor  b1  a1
+remainder  b1  divisor  a1
 -----------------------------------
 Getting Local Variable Liveness:
 Basic block 0: 
@@ -196,8 +196,8 @@ Basic block ret:
 -----------------------------------
 
 Register Usage Statistics:
-Total registers needed: 8
-Global registers needed: 6
+Total registers needed: 6
+Global registers needed: 4
 Local registers needed: 2
 =====================================
 

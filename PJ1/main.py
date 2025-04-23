@@ -36,7 +36,7 @@ def main():
     cdfg.generateDFGs()
     cdfg.scheduleASAP()
     cdfg.registerAllocation()
-    print(f"schedule results: {cdfg.schedule}")
+    # print(f"schedule results: {cdfg.schedule}")
     # print(f"========================================")
     # print(f"register allocation after merging: {cdfg.merged_coloring_result}")
 

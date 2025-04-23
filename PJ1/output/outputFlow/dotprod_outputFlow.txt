@@ -75,7 +75,7 @@ Input variables:
 Basic block 0:
 No input variables in this block.  
 Basic block start:
-cr  c  i_inc  
+cr  i_inc  c  
 Basic block calc:
 cl  
 Basic block ret:
@@ -92,23 +92,23 @@ Basic block calc:
 cr  i_inc  
 -----------------------------------
 Global Variables:
-cl  i
+i  cl
 -----------------------------------
 Getting Local Variable Liveness:
 Basic block 0: 
   cycle 0, there's no variable living in this cycle.
   cycle 1, variable	c	is living.
 Basic block start: 
-  cycle 0, variable	cr, c, i_inc	is living.
+  cycle 0, variable	cr, i_inc, c	is living.
   cycle 1, variable	cr, c	is living.
   cycle 2, variable	cond	is living.
   cycle 3, there's no variable living in this cycle.
 Basic block calc: 
   cycle 0, there's no variable living in this cycle.
-  cycle 1, variable	ai, i_inc	is living.
-  cycle 2, variable	ai, i_inc	is living.
-  cycle 3, variable	bi, ai, i_inc	is living.
-  cycle 4, variable	bi, ai, i_inc	is living.
+  cycle 1, variable	i_inc, ai	is living.
+  cycle 2, variable	i_inc, ai	is living.
+  cycle 3, variable	ai, i_inc, bi	is living.
+  cycle 4, variable	i_inc, bi, ai	is living.
   cycle 5, variable	i_inc, ci	is living.
   cycle 6, variable	i_inc, ci	is living.
   cycle 7, variable	i_inc, ci	is living.
@@ -124,12 +124,12 @@ Basic block 0:
   Variable	c	lives from cycle 1 to cycle 1
 Basic block start: 
   Variable	cr	lives from cycle 0 to cycle 1
-  Variable	c	lives from cycle 0 to cycle 1
   Variable	i_inc	lives from cycle 0 to cycle 0
+  Variable	c	lives from cycle 0 to cycle 1
   Variable	cond	lives from cycle 2 to cycle 2
 Basic block calc: 
-  Variable	ai	lives from cycle 1 to cycle 4
   Variable	i_inc	lives from cycle 1 to cycle 10
+  Variable	ai	lives from cycle 1 to cycle 4
   Variable	bi	lives from cycle 3 to cycle 4
   Variable	ci	lives from cycle 5 to cycle 9
   Variable	cr	lives from cycle 10 to cycle 10
@@ -198,8 +198,8 @@ Basic block ret:
 -----------------------------------
 
 Register Usage Statistics:
-Total registers needed: 6
-Global registers needed: 3
+Total registers needed: 5
+Global registers needed: 2
 Local registers needed: 3
 =====================================
 

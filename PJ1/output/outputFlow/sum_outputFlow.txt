@@ -76,7 +76,7 @@ Input variables:
 Basic block 0:
 No input variables in this block.  
 Basic block start:
-c  i_inc  
+i_inc  c  
 Basic block calc:
 sum  
 Basic block ret:
@@ -93,39 +93,39 @@ Basic block calc:
 i_inc  
 -----------------------------------
 Global Variables:
-temp  i
+i  temp
 -----------------------------------
 Getting Local Variable Liveness:
 Basic block 0: 
   cycle 0, there's no variable living in this cycle.
   cycle 1, variable	c	is living.
 Basic block start: 
-  cycle 0, variable	c, i_inc	is living.
+  cycle 0, variable	i_inc, c	is living.
   cycle 1, variable	c	is living.
-  cycle 2, variable	cond, sum	is living.
+  cycle 2, variable	sum, cond	is living.
   cycle 3, variable	sum	is living.
 Basic block calc: 
   cycle 0, variable	sum	is living.
-  cycle 1, variable	i_inc, ai, sum	is living.
-  cycle 2, variable	i_inc, ai, sum	is living.
+  cycle 1, variable	sum, i_inc, ai	is living.
+  cycle 2, variable	sum, i_inc, ai	is living.
   cycle 3, variable	i_inc	is living.
   cycle 4, variable	i_inc	is living.
   cycle 5, variable	i_inc	is living.
 Basic block ret: 
   cycle 0, variable	sum	is living.
-  cycle 1, variable	num, sum	is living.
-  cycle 2, variable	res, sum	is living.
-  cycle 3, variable	res, sum	is living.
+  cycle 1, variable	sum, num	is living.
+  cycle 2, variable	sum, res	is living.
+  cycle 3, variable	sum, res	is living.
   cycle 4, variable	sum	is living.
 -----------------------------------
 Getting Living Period for every local variable:
 Basic block 0: 
   Variable	c	lives from cycle 1 to cycle 1
 Basic block start: 
-  Variable	c	lives from cycle 0 to cycle 1
   Variable	i_inc	lives from cycle 0 to cycle 0
-  Variable	cond	lives from cycle 2 to cycle 2
+  Variable	c	lives from cycle 0 to cycle 1
   Variable	sum	lives from cycle 2 to cycle 3
+  Variable	cond	lives from cycle 2 to cycle 2
 Basic block calc: 
   Variable	sum	lives from cycle 0 to cycle 2
   Variable	i_inc	lives from cycle 1 to cycle 5
@@ -144,14 +144,6 @@ Basic block 0:
 Basic block start: 
   Register 0:
     stores variable	sum	from cycle 2 to cycle 3
-  Register 1:
-    stores variable	c	from cycle 0 to cycle 1
-    stores variable	cond	from cycle 2 to cycle 2
-  Register 2:
-    stores variable	i_inc	from cycle 0 to cycle 0
-    stores variable	sum	from cycle 2 to cycle 3
-    stores variable	i_inc	from cycle 0 to cycle 0
-  Register 1:
     stores variable	c	from cycle 0 to cycle 1
   Register 1:
     stores variable	cond	from cycle 2 to cycle 2
@@ -163,7 +155,36 @@ Basic block calc:
   Register 1:
     stores variable	ai	from cycle 1 to cycle 2
   Register 2:
+    stores variable	i_inc	from cycle 1 to cycle 5
+Basic block ret: 
+  Register 0:
+    stores variable	sum	from cycle 0 to cycle 4
+  Register 1:
+    stores variable	num	from cycle 1 to cycle 1
+    stores variable	res	from cycle 2 to cycle 3
+  Register 2:
+-----------------------------------
+Register Allocation After Merging:
+Basic block 0: 
+  Register 0:
+    stores variable	c	from cycle 1 to cycle 1
+  Register 1:
+  Register 2:
+Basic block start: 
+  Register 0:
+    stores variable	sum	from cycle 2 to cycle 3
+    stores variable	c	from cycle 0 to cycle 1
+  Register 1:
+    stores variable	cond	from cycle 2 to cycle 2
+  Register 2:
+    stores variable	i_inc	from cycle 0 to cycle 0
+Basic block calc: 
+  Register 0:
     stores variable	sum	from cycle 0 to cycle 2
+  Register 1:
+    stores variable	ai	from cycle 1 to cycle 2
+  Register 2:
+    stores variable	i_inc	from cycle 1 to cycle 5
 Basic block ret: 
   Register 0:
     stores variable	sum	from cycle 0 to cycle 4
@@ -174,9 +195,8 @@ Basic block ret:
 -----------------------------------
 
 Register Usage Statistics:
-  Basic block 0: Initial: 1, After merging: 1, Saved: 0 registers
-  Basic block start: Initial: 3, After merging: 2, Saved: 1 registers
-  Basic block calc: Initial: 3, After merging: 3, Saved: 0 registers
-  Basic block ret: Initial: 2, After merging: 2, Saved: 0 registers
+Total registers needed: 5
+Global registers needed: 2
+Local registers needed: 3
 =====================================
 
