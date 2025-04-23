@@ -36,7 +36,10 @@ def main():
     cdfg.generateDFGs()
     cdfg.scheduleASAP()
     cdfg.registerAllocation()
-    
+    print(f"schedule results: {cdfg.schedule}")
+    # print(f"========================================")
+    # print(f"register allocation after merging: {cdfg.merged_coloring_result}")
+
     verilog_syntax = VerilogSyntax()
     verilog_generator = VerilogGenerator(cdfg, verilog_syntax)
     verilog_generator.gen_all_code()

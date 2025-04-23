@@ -75,3 +75,11 @@
 
 ## 4.22
 - 更新`README.md`
+
+## 4.23 
+- 实现`genFSM.py`的基础1.0版本，可以跑通，但是代码风格有待调整修改；三段式FSM主要面临组合逻辑和时序逻辑不对齐等重大问题，所以在最后的代码中直接使用一个always块生成所有的内容。
+- 对`genFSM.py`中的相关函数进行重构和添加，将原来的三段式写法`gen_state_update`、`gen_br_counter`、`gen_control_logic`合并成`gen_timing_logic`，并在其中调用`gen_control_logic`以实现想要达成的目的。
+- `genFSM.py`中的`op_translation`method补全，这个方法主要用于实现给定基本块、给定周期数，将特定的指令转换成verilog代码。
+- `genFSM.py`添加`gen_assign_logic`method，主要用于对有`int`类型返回值的函数，对输出端口的return_val进行赋值；以及对在branch指令中的条件变量进行赋值。
+- 修改`registerAllocator.py`中的`get_global_variables`method，将输出变量从全局寄存器中删去（否则在之后生成verilog代码中会在input wire和reg中重复生成该变量，导致问题）
+- 在`resourceData.py`中定义数值到常量名称的映射。

@@ -84,9 +84,6 @@ def get_input_output_variables(self):
 
 def get_global_variables(self):
     self.global_variable = set()
-    for param in self.params:
-        if param[1] == 'non-array':
-            self.global_variable.add(param[0])
     bb_operands_list = []
     for bb in self.basicBlocks.values():
         bb_operands_list.append(bb.get_bb_operands())
@@ -100,6 +97,9 @@ def get_global_variables(self):
             removal_list.append(v)
     for v in removal_list:
         self.global_variable.remove(v)
+    for param in self.params:
+        if param[1] == 'non-array':
+            self.global_variable = self.global_variable - {param[0]}
 
 def get_local_variable_liveness(self):
     self.live_local_variables = {}
