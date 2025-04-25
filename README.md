@@ -65,11 +65,39 @@ sh test.sh
 
 This will run all automated tests to verify the functionality of the HLS toolset. The output will under `testOutput/` directory
 
+### Testbench Generation Instructions
+
+To generate a Verilog testbench for your LLVM IR file:
+
+1. Create an input file in the `example` directory with the following format:
+   ```
+   a 10           # Single integer variable 'a'
+   b 1 2 3 4 5    # Array variable 'b'
+   ```
+   Note: Variable names must match those in your LLVM IR file. Name the file as `your_file_input.txt`.
+
+2. Generate the testbench:
+   ```bash
+   cd example
+   python testbenchGenerator.py your_file
+   ```
+   Note: Omit file extensions (`.txt` or `.ll`) in the command.
+
+The generated testbench will be created at `example/testbench/your_file.v`. For array variables, corresponding SRAM initialization files will be placed in `example/testbench/your_file/` directory as `variable_name.txt`.
+
 ### Basic Usage
 
 1. Prepare your LLVM IR file (`.ll` format):
    - Place the `.ll` file in the `example` directory
-   - Place your Verilog testbench file in `example/testbench/your_file_tb.v`
+   - For the provided example files (`dotprod.ll`, `gcd.ll`, `sum.ll`), testbenches are included
+   - For custom LLVM IR files:
+     - Generate testbench using the [testbench generator](#testbench-generation-instructions), or
+     - Manually create:
+       - Verilog testbench file in `example/testbench/your_file_tb.v`
+       - SRAM initialization files in `example/testbench/your_file/variable_name.txt`
+       
+     Note: Using the testbench generator is recommended. If you need to write a custom testbench, 
+     please follow the [Manual Step-by-Step Usage](#manual-step-by-step-usage) guide and write teshbench after the Verilog file generated.
 
 2. Run the automated workflow:
    ```bash
@@ -77,11 +105,13 @@ This will run all automated tests to verify the functionality of the HLS toolset
    ```
    Note: `output_directory` is optional (defaults to `output/`)
 
-3. Check results in the output directory
+3. Check results in the `output_directory/`
 
 ### Manual Step-by-Step Usage
 
-1. Prepare input files as described above
+1. Prepare your LLVM IR file and input data:
+   - Place the `.ll` file in the `example` directory
+   - Create input file in `example` directory following [testbench generation instructions](#testbench-generation-instructions)
 
 2. Build the parser:
    ```bash
@@ -89,55 +119,63 @@ This will run all automated tests to verify the functionality of the HLS toolset
    make
    ```
 
-3. Parse LLVM IR:
+3. Parse LLVM IR and run HLS workflow:
    ```bash
    ./hls ../example/your_file.ll ../output_directory/parseResult/your_file_parseResult.txt
-   ```
-
-4. Run HLS:
-   ```bash
    cd ..
    python main.py output_directory/parseResult/your_file_parseResult.txt
    ```
-   Note: Results will be generated in the grandparent directory of the parse result file
+   The HLS results will be in:
+   - Schedule and allocation: `output_directory/outputFlow/your_file.txt`
+   - Generated RTL: `output_directory/verilog_code/your_file.v`
+
+4. Generate testbench:
+   ```bash
+   cd example
+   python testbenchGenerator.py your_file
+   ```
 
 5. Simulate generated Verilog:
    ```bash
-   cd output_directory/verilog_code
+   cd ../output_directory/verilog_code
    iverilog -o wave your_file.v ../../example/testbench/your_file_tb.v
    vvp -n wave
    ```
-   The waveform will be available at `output_directory/verilog_code/your_file_wave.vcd`
+   The waveform will be available at `output_directory/waveform/your_file.vcd`
+
+Note: Using `autorun.sh` is recommended over manual steps as it handles the entire workflow automatically.
 
 ## Project Structure
 
 ```
 .
-├── example/            # Example LLVM IR files and testbenches
+├── example/           # Example LLVM IR files and input files
 │   ├── dotprod.ll     # Dot product example
 │   ├── gcd.ll         # Greatest common divisor example
 │   ├── sum.ll         # Sum array example
-│   └── testbench/     # Verilog testbench files
-├── hls/               # High-level synthesis core implementation
-│   ├── resourceData/  # Resource constraints and storage definitions
-│   ├── cdfgGenerator.py     # Control Data Flow Graph generator
-│   ├── genFSM.py      # Finite State Machine generator
-│   ├── scheduler.py    # Operation scheduling algorithms
-│   ├── registerAllocator.py # Register allocation optimization
-│   └── IO port.md     # IO port specifications
-├── sampleOutput/      # Sample generated output files
-│   ├── outputFlow/    # Scheduling and allocation results
-│   ├── parseResult/   # LLVM IR parsing results
-│   ├── verilog_code/  # Generated Verilog RTL code
-│   └── waveform/      # Simulation waveforms (vcd files)
-├── parser/            # LLVM IR parser implementation
-│   ├── Makefile      # Parser build script
-│   ├── main.cpp      # Parser main program
-│   ├── hls           # Execution file
-│   └── src/          # Parser source files
-├── main.py           # Project main entry point
+│   ├── dotprod_input.txt  # Input file for dotprod.ll, as an input file example
+│   ├── testbenchGenerator.py  # Script to generate testbenches
+│   └── testbench/     # Generated testbench files
+│       ├── dotprod_tb.v   # Testbench for dotprod.ll
+│       └── dotprod/       # SRAM initialization files
+├── parser/            # LLVM IR parser
+│   ├── Makefile       # Build configuration
+│   ├── main.cpp       # Parser entry point
+│   └── src/           # Parser source files
+├── hls/               # HLS core implementation
+│   ├── resourceData/  # Resource constraints
+│   ├── cdfgGenerator.py   # CDFG generator
+│   ├── genFSM.py      # FSM generator
+│   ├── scheduler.py   # Scheduling algorithms
+│   └── registerAllocator.py # Register allocation
+├── sampleOutput/      # Sample generated files directory
+│   ├── parseResult/   # Parser output
+│   ├── outputFlow/    # HLS results
+│   ├── verilog_code/  # Generated RTL
+│   └── waveform/      # Simulation waves
+├── main.py           # Project entry point
 ├── autorun.sh        # Automation script
-└── README.md         # Project documentation
+└── test.sh           # Test automation script
 ```
 
 ## Example Run

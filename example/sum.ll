@@ -1,4 +1,4 @@
-define int Sum(int a[], int b[], int n)
+define int sum(int a[], int b[], int n)
     c = 0;
 start:
     i = phi(0, 0, i_inc, calc);

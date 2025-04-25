@@ -223,7 +223,7 @@ class VerilogGenerator:
         for variables in self.cdfg.params:
             variable_name, variable_type = variables
             if variable_type == 'array':
-                reg_init.append(f'\t\t$readmemh("../../example/testbench/{variable_name}.txt", {variable_name}_mem);')
+                reg_init.append(f'\t\t$readmemh("../../example/testbench/{self.cdfg.functionName}/{variable_name}.txt", {variable_name}_mem);')
             else:
                 continue
         

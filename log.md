@@ -94,8 +94,15 @@
 - 删除现有`output`目录改为`sampleOutput`，存放三个文件的输出。
 - 修改`main.py`，可以指定输出文件目录，当无指定的输出目录时，默认为输入文件的爷爷目录
 
-## 4.23 
+## 4.23 f3aa0c462fc62e440ad82886f6d2219db07d3962
 - 添加parser下的`./hls`，可以直接调用。如果`./hls`不存在再make。可以节省时间。删掉`make clean`，让`hls`可执行文件反复使用
 - 在`main.py`中增加运行时间的输出
 - 增加`test.sh`，自动运行三个测试文件，并将输出存储在`testOutput`目录下。在`README.md`中添加这一部分的描述。
 - 修改`autorun.sh`中关于输出目录最后`/`符号的问题。
+
+## 4.25
+- polish一下`README.md`，添加了生成testbench的部分
+- 把sum的函数名改为小写
+- 撰写`testbenchGenerator.py`
+- 将SRAM文件按照使用它们的函数放到了`testbench/`的不同文件夹下
+- 修改`genFSM.py`，详细读入SRAM文件的地址。
