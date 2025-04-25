@@ -1,4 +1,4 @@
-module Sum (
+module sum (
 	input	[31:0] n,
 	output	[31:0] return_val,
 	input	sys_clk,
@@ -12,6 +12,7 @@ module Sum (
 	reg [31:0] reg_0;
 	reg [31:0] reg_1;
 	reg [31:0] reg_2;
+	reg [31:0] reg_3;
 	reg [3:0] cur_state;
 	reg [3:0] last_state;
 	reg branch_ready;
@@ -30,10 +31,11 @@ always @(posedge sys_clk or negedge sys_rst_n) begin
 		reg_0 <= 32'bx;
 		reg_1 <= 32'bx;
 		reg_2 <= 32'bx;
+		reg_3 <= 32'bx;
 		reg_temp <= 32'bx;
 		reg_i <= 32'bx;
-		$readmemh("../../example/testbench/a.txt", a_mem);
-		$readmemh("../../example/testbench/b.txt", b_mem);
+		$readmemh("../../example/testbench/sum/a.txt", a_mem);
+		$readmemh("../../example/testbench/sum/b.txt", b_mem);
 		ret <= 32'bz;
 		counter <= 32'b0;
 		last_state <= state_0;
@@ -88,16 +90,16 @@ case (cur_state)
 	state_ret: begin
 		case (counter)
 			32'd0: begin
-					reg_1 <= n - 1;
+					reg_0 <= n - 1;
 			end
 			32'd1: begin
-					reg_1 <= b_mem[reg_1];
+					reg_0 <= b_mem[reg_0];
 			end
 			32'd2: begin
 				
 			end
 			32'd3: begin
-					ret <= reg_1;
+					ret <= reg_0;
 					branch_ready <= 1'b1;
 			end
 		endcase

@@ -60,7 +60,10 @@ def get_input_output_variables(self):
         self.output_variables[bb] = (self.input_variables[bb] | self.basicBlocks[bb].get_bb_left_values())-self.basicBlocks[bb].get_bb_operands()
         for edge in self.cfg.successors(bb):
             next_bb = edge
-            self.input_variables[next_bb] = self.input_variables[next_bb] | self.output_variables[bb]
+            if self.cfg.successors(next_bb):
+                self.input_variables[next_bb] = self.input_variables[next_bb] | self.output_variables[bb]
+            else:
+                self.input_variables[next_bb] = require_variables[next_bb]
             if visited[next_bb] == 0:
                 visited[next_bb] = 1
                 bb_queue.append(next_bb)
@@ -80,7 +83,6 @@ def get_input_output_variables(self):
                 removal_list.append(v)
         for v in removal_list:
             self.output_variables[label].remove(v)
-
 
 def get_global_variables(self):
     self.global_variable = set()
@@ -106,13 +108,14 @@ def get_local_variable_liveness(self):
 
     for bb_label, bb in self.basicBlocks.items():
         bb_live_local_variables = []
-        
-        cycle_live_local_variables = self.input_variables.get(bb_label, set()) - self.global_variable
-        bb_live_local_variables.append(cycle_live_local_variables)
-        for cycle in range(len(self.schedule[bb_label])):
+        cycle_live_local_variables = self.output_variables[bb_label] - self.global_variable
+        bb_live_local_variables.insert(0, cycle_live_local_variables)
+
+        for cycle in range(len(self.schedule[bb_label])-1, -1, -1):
             ops = self.schedule[bb_label][cycle]
             cycle_operands = set()
             cycle_left_values = set()
+
             for op, _ in ops:
                 operands = get_op_operands(bb.ops[op])
                 if operands:
@@ -120,13 +123,23 @@ def get_local_variable_liveness(self):
                 left_value = get_op_left_values(bb.ops[op])
                 if left_value:
                     cycle_left_values = cycle_left_values | {left_value}
-            if cycle_left_values:
-                cycle_live_local_variables = (((cycle_live_local_variables - (cycle_operands-self.output_variables[bb_label])))|cycle_left_values) - self.global_variable
-            else:
-                cycle_live_local_variables = ((cycle_live_local_variables - (cycle_operands-self.output_variables[bb_label]))) - self.global_variable
 
-            bb_live_local_variables.append(cycle_live_local_variables)
+            if cycle_operands:
+                cycle_live_local_variables = (cycle_live_local_variables-cycle_left_values)|cycle_operands - self.global_variable
+            else:
+                cycle_live_local_variables = (cycle_live_local_variables-cycle_left_values) - self.global_variable
+
+            removal_set = set()
+
+            for v in cycle_live_local_variables:
+                if v.isdigit():
+                    removal_set.add(v)
+            if removal_set:
+                cycle_live_local_variables = cycle_live_local_variables - removal_set
+            bb_live_local_variables.insert(0,cycle_live_local_variables)
+
         self.live_local_variables[bb_label] = bb_live_local_variables
+        print(bb_label, ":", bb_live_local_variables)
 
 def get_living_period(self):
     self.living_period = {}
@@ -140,6 +153,11 @@ def get_living_period(self):
                 else:
                     bb_live_period[v][1] = i
         self.living_period[bb_label]=bb_live_period
+
+def get_block_length(self):
+    self.block_length = {}
+    for key in self.schedule:
+        self.block_length[key] = len(self.schedule[key])
 
 def register_coloring(self):
     self.coloring_result = {}

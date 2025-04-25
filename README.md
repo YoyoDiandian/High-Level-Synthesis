@@ -6,17 +6,16 @@ A toolset for High-Level Synthesis (HLS) and register allocation optimization in
 
 High-Level Synthesis is a toolset that transforms high-level programming languages (C-like) into hardware description languages and optimizes register allocation to improve circuit performance and resource utilization.
 
-The project implements a complete workflow from LLVM IR to hardware description languages, including a sophisticated register allocation algorithm that ensures variable continuity across basic blocks. Sample outputs demonstrating the workflow, including scheduling results, generated RTL code, and simulation waveforms, are provided in the `sampleOutput` directory.
+The project implements a complete workflow from LLVM IR to hardware description languages, including a sophisticated register allocation algorithm that ensures variable continuity across basic blocks. Sample outputs demonstrating the workflow, including scheduling results, generated RTL code, and simulation waveforms of three example files, are provided in the `sampleOutput` directory.
 
 ## Key Features
 
 - **LLVM IR Parsing**: Parse computational data flow graphs from LLVM intermediate representation
 - **Scheduling Algorithms**: Implement various operation scheduling strategies for optimized parallelism
 - **Register Allocation**: Efficient register allocation algorithms to minimize register usage
-- **Cross-Basic-Block Optimization**: Support variable continuity optimization across basic blocks
-- **Output Visualization**: Visualize data flow and scheduling results
 - **Automatic Code Generation**: Generate hardware description language code based on optimized scheduling and register allocation
 - **Waveform Generation**: Compile the generated RTL code and generate waveform
+- **Testbench Generation**: Generate Verilog testbench based on LLVM IR and input parameters files
 
 ## Requirements
 
@@ -109,9 +108,11 @@ The generated testbench will be created at `example/testbench/your_file.v`. For 
 
 ### Manual Step-by-Step Usage
 
+*Note: While manual step-by-step usage is available, we strongly recommend using `autorun.sh` for optimal workflow efficiency. Only proceed with manual steps if troubleshooting `autorun.sh` issues.*
+
 1. Prepare your LLVM IR file and input data:
    - Place the `.ll` file in the `example` directory
-   - Create input file in `example` directory following [testbench generation instructions](#testbench-generation-instructions)
+   - Create testbench file in `example/testbench/` directory following [testbench generation instructions](#testbench-generation-instructions)
 
 2. Build the parser:
    ```bash
@@ -145,6 +146,36 @@ The generated testbench will be created at `example/testbench/your_file.v`. For 
 
 Note: Using `autorun.sh` is recommended over manual steps as it handles the entire workflow automatically.
 
+### Additional Example Files
+
+In the `example/unrun` directory, we provide additional LLVM IR files and input data files that do not have pre-generated testbenches:
+- `linearSearch.ll` - Linear search algorithm implementation
+- `maxArray.ll` - Find maximum value in an array
+- `sumArray.ll` - Calculate sum of array elements
+
+Note: These files are not included in the automated tests (`test.sh`) as they require testbench generation before running the HLS workflow.
+
+To use these examples:
+
+To use these example files:
+
+1. Copy the desired `.ll` file and corresponding `input.txt` file from `example/unrun/` to the `example/` directory
+
+2. Generate the testbench:
+   ```bash
+   cd example
+   python testbenchGenerator.py <filename>    # e.g., linearSearch, maxArray, or sumArray
+   ```
+
+3. Run the HLS workflow:
+   ```bash
+   sh autorun.sh example/<filename>.ll        # e.g., example/linearSearch.ll
+   ```
+
+The generated files will be placed in the `output/` directory, including parsing results, RTL code, and simulation waveforms.
+
+These examples provide a good starting point for understanding how different algorithms are synthesized into hardware.
+
 ## Project Structure
 
 ```
@@ -155,9 +186,10 @@ Note: Using `autorun.sh` is recommended over manual steps as it handles the enti
 │   ├── sum.ll         # Sum array example
 │   ├── dotprod_input.txt  # Input file for dotprod.ll, as an input file example
 │   ├── testbenchGenerator.py  # Script to generate testbenches
-│   └── testbench/     # Generated testbench files
-│       ├── dotprod_tb.v   # Testbench for dotprod.ll
-│       └── dotprod/       # SRAM initialization files
+│   ├── testbench/     # Generated testbench files
+│   │   ├── dotprod_tb.v   # Testbench for dotprod.ll
+│   │   └── dotprod/       # SRAM initialization files
+│   └── unrun/         # Directory containing untested LLVM IR files and their corresponding input files
 ├── parser/            # LLVM IR parser
 │   ├── Makefile       # Build configuration
 │   ├── main.cpp       # Parser entry point
@@ -173,9 +205,9 @@ Note: Using `autorun.sh` is recommended over manual steps as it handles the enti
 │   ├── outputFlow/    # HLS results
 │   ├── verilog_code/  # Generated RTL
 │   └── waveform/      # Simulation waves
-├── main.py           # Project entry point
-├── autorun.sh        # Automation script
-└── test.sh           # Test automation script
+├── main.py            # Project entry point
+├── autorun.sh         # Automation script
+└── test.sh            # Test automation script
 ```
 
 ## Example Run

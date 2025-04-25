@@ -100,14 +100,21 @@
 - 增加`test.sh`，自动运行三个测试文件，并将输出存储在`testOutput`目录下。在`README.md`中添加这一部分的描述。
 - 修改`autorun.sh`中关于输出目录最后`/`符号的问题。
 
-## 4.25
+## 4.25 2a2d55e85d1f397f543d99146582c8b210a23f22
 - polish一下`README.md`，添加了生成testbench的部分
 - 把sum的函数名改为小写
 - 撰写`testbenchGenerator.py`
 - 将SRAM文件按照使用它们的函数放到了`testbench/`的不同文件夹下
 - 修改`genFSM.py`，详细读入SRAM文件的地址。
 
-## 4.25
+## 4.25 94d5354b72db5e5a4492fcb7317e37abda42c6eb -prototype
 -修改了prototype分支下的`register_allocator.py`，修改内容如下：
 1. 发现`get_local_variable_liveness`存在漏洞，即从上向下计算生存周期，这可能使局部变量在还未完成使用时被错删，应当从下往上，更正后的方法`get_local_variable_liveness_ll`（见142行）
 2. 发现`register_coloring`部分不够严谨，当跨块间无法通过挪动、交换位置来对齐寄存器时，需要新建一个寄存器，原先的代码仅处理正在校验的位置，（即仅将正在检验的两个块间的该变量挪至新寄存器），但严谨的做法是遍历所有基本块，将其中所有该变量挪动到新寄存器并从旧寄存器中删除（见366-374行）
+
+## 4.26 
+- 增添了三个测试用例，放在`example/unrun/`目录下，这三个用例在仓库中没有运行测试，由使用者自己测试使用
+- 精简`testbenchGenerator.py`
+- 将prototype分支下对`register_allocator.py`的修改迁移到main的`registerAllocator.py`中
+- 修改`autorun.sh`中部分提示词
+- `README.md`增加`Additional Example Files`部分，说明如何运行三个附加测试用例

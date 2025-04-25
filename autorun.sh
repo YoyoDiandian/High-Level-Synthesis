@@ -61,13 +61,14 @@ if ! ./hls "$ROOT_DIR/$INPUT_FILE" "$ROOT_DIR/$PARSE_RESULT_PATH"; then
         exit 1
     fi
 fi
+rm -f *.o
 
 echo "✅ Parser completed successfully"
 echo "Parse result saved to: $PARSE_RESULT_PATH"
 
 echo ""
 echo "============================="
-echo "Step 2: Generating CDFG..."
+echo "Step 2: Running high level synthesis..."
 echo "============================="
 cd "$ROOT_DIR"
 if ! python3 main.py "$PARSE_RESULT_PATH" "$OUTPUT_DIR"; then
@@ -78,7 +79,7 @@ if ! python3 main.py "$PARSE_RESULT_PATH" "$OUTPUT_DIR"; then
     exit 1
 fi
 
-echo "✅ CDFG generation completed successfully"
+echo "✅ High level synthesis completed successfully"
 echo "Output flow file saved to: $OUTPUT_DIR/outputFlow.txt"
 echo "Verilog file generated at: $VERILOG_FILE"
 

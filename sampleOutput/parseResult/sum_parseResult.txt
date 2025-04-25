@@ -1,5 +1,5 @@
 ret type: int
-function name Sum
+function name sum
 array
 a
 array

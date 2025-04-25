@@ -82,7 +82,7 @@ Input variables:
 Basic block 0:
 No input variables in this block.  
 Basic block start:
-d  c  
+c  d  
 Basic block cal:
 No input variables in this block.  
 Basic block exchange:
@@ -92,7 +92,7 @@ No input variables in this block.
 -----------------------------------
 Output variables:
 Basic block 0:
-d  c  
+c  d  
 Basic block start:
 No output variables in this block.  
 Basic block cal:
@@ -103,15 +103,15 @@ Basic block ret:
 No output variables in this block.  
 -----------------------------------
 Global Variables:
-divisor  remainder  b1  a1
+b1  divisor  a1  remainder
 -----------------------------------
 Getting Local Variable Liveness:
 Basic block 0: 
-  cycle 0, there's no variable living in this cycle.
-  cycle 1, variable	c	is living.
-  cycle 2, variable	d, c	is living.
+  cycle 0, variable	a, b	is living.
+  cycle 1, variable	c, b	is living.
+  cycle 2, variable	c, d	is living.
 Basic block start: 
-  cycle 0, variable	d, c	is living.
+  cycle 0, variable	c, d	is living.
   cycle 1, variable	d	is living.
   cycle 2, there's no variable living in this cycle.
   cycle 3, variable	a_LE_b	is living.
@@ -132,11 +132,13 @@ Basic block ret:
 -----------------------------------
 Getting Living Period for every local variable:
 Basic block 0: 
+  Variable	a	lives from cycle 0 to cycle 0
+  Variable	b	lives from cycle 0 to cycle 1
   Variable	c	lives from cycle 1 to cycle 2
   Variable	d	lives from cycle 2 to cycle 2
 Basic block start: 
-  Variable	d	lives from cycle 0 to cycle 1
   Variable	c	lives from cycle 0 to cycle 0
+  Variable	d	lives from cycle 0 to cycle 1
   Variable	a_LE_b	lives from cycle 3 to cycle 3
 Basic block cal: 
   Variable	larger	lives from cycle 2 to cycle 2
@@ -149,8 +151,10 @@ Basic block ret:
 Register Allocation:
 Basic block 0: 
   Register 0:
+    stores variable	a	from cycle 0 to cycle 0
     stores variable	c	from cycle 1 to cycle 2
   Register 1:
+    stores variable	b	from cycle 0 to cycle 1
     stores variable	d	from cycle 2 to cycle 2
 Basic block start: 
   Register 0:
@@ -173,8 +177,10 @@ Basic block ret:
 Register Allocation After Merging:
 Basic block 0: 
   Register 0:
+    stores variable	a	from cycle 0 to cycle 0
     stores variable	c	from cycle 1 to cycle 2
   Register 1:
+    stores variable	b	from cycle 0 to cycle 1
     stores variable	d	from cycle 2 to cycle 2
 Basic block start: 
   Register 0:
