@@ -60,7 +60,10 @@ def get_input_output_variables(self):
         output_variables[bb] = (input_variables[bb] | self.cfg[bb].get_bb_left_values())-self.cfg[bb].get_bb_operands()
         for edge in self.cfg_adj_list[bb]:
             next_bb = edge[0]
-            input_variables[next_bb] = input_variables[next_bb]|output_variables[bb]
+            if self.cfg_adj_list[next_bb]:
+                input_variables[next_bb] = input_variables[next_bb]|output_variables[bb]
+            else:
+                input_variables[next_bb] = require_variables[next_bb]
             if visited[next_bb] == 0:
                 visited[next_bb] = 1
                 bb_queue.append(next_bb)
@@ -136,8 +139,46 @@ def get_local_variable_liveness(self):
         print(bb_label,":",bb_live_local_variables)
     return live_local_variables
 
+def get_local_variable_liveness_ll(self):
+    print("Getting Local Variable Liveness\n")
+    live_local_variables = {}
+    _, output_variables = self.get_input_output_variables()
+    global_variable_set = self.get_global_variables()
+    schedule = self.schedule_asap()
+    for bb_label,bb in self.cfg.items():
+        bb_live_local_variables = []
+        cycle_live_local_variables = output_variables[bb_label]-global_variable_set
+        bb_live_local_variables.insert(0,cycle_live_local_variables)
+        for cycle in range(len(schedule[bb_label])-1,-1,-1):
+            ops = schedule[bb_label][cycle]
+            cycle_operands = set()
+            cycle_left_values = set()
+            for op,_ in ops:
+                operands = get_op_operands(bb.ops[op])
+                if operands:
+                    cycle_operands = cycle_operands | operands
+                left_value = get_op_left_values(bb.ops[op])
+                if left_value:
+                    cycle_left_values = cycle_left_values | {left_value}
+            if cycle_operands:
+                cycle_live_local_variables = (cycle_live_local_variables-cycle_left_values)|cycle_operands - global_variable_set
+            else:
+                cycle_live_local_variables = (cycle_live_local_variables-cycle_left_values) - global_variable_set
+            removal_set = set()
+            for v in cycle_live_local_variables:
+                if v.isdigit():
+                    removal_set.add(v)
+            if removal_set:
+                cycle_live_local_variables = cycle_live_local_variables - removal_set
+            bb_live_local_variables.insert(0,cycle_live_local_variables)
+        live_local_variables[bb_label] = bb_live_local_variables
+        print(bb_label,":",bb_live_local_variables)
+    return live_local_variables
+
+
+
 def get_living_period(self):
-    live_local_variables = self.get_local_variable_liveness()
+    live_local_variables = self.get_local_variable_liveness_ll()
     print("Getting Living Period\n")
     living_period = {}
     for bb_label, bb in self.cfg.items():
@@ -153,7 +194,15 @@ def get_living_period(self):
         print(bb_label,":",bb_live_period)
     return living_period
 
+def get_block_length(self):
+    schedule = self.schedule_asap()
+    block_length = {}
+    for key in schedule:
+        block_length[key] = len(schedule[key])
+    return block_length
+
 def register_coloring(self):
+    block_length = self.get_block_length()
     # 获取变量生存周期
     living_period = self.get_living_period()
     coloring_result = {}
@@ -163,7 +212,7 @@ def register_coloring(self):
         bb_coloring_result ={}
         # 将该块内局部变量初始化为未染色
         uncolored = list(living_period[bb_label].keys())
-        uncolored.sort(key = lambda x:(living_period[bb_label][x][0],(living_period[bb_label][x][1]-living_period[bb_label][x][0])))
+        uncolored.sort(key = lambda x:(living_period[bb_label][x][0],(living_period[bb_label][x][1]-living_period[bb_label][x][0]),x))
         # 颜色0
         color = 0
         while uncolored:
@@ -200,7 +249,15 @@ def register_coloring(self):
             src_coloring = coloring_result[src_label]
             sink_coloring = coloring_result[sink_label]
             #print(src_label,sink_label,":")
-            checklist = (output_variables[src_label] & input_variables[sink_label]) - global_variables
+            checklist = list((output_variables[src_label] & input_variables[sink_label]) - global_variables)
+            var_check_liveness = {}
+            for var_check in checklist:
+                for reg in src_coloring.values():
+                    if reg:
+                        if reg[-1][0] == var_check:
+                            var_check_liveness[var_check] = reg[-1][-1][-1]-reg[-1][-1][0]
+            checklist.sort(key=lambda x:(-var_check_liveness[x]))
+
             #print(checklist)
             src_reg = -1
             sink_reg = -1
@@ -240,12 +297,13 @@ def register_coloring(self):
                         if (len(src_coloring[src_reg])>1):
                             src_right_edge = src_coloring[src_reg][-2][-1][-1]
                         else:
-                            src_right_edge = -1
+                            src_right_edge = 0
                         if (len(src_coloring[sink_reg])>1):
                             sink_right_edge = src_coloring[sink_reg][-2][-1][-1]
                         else:
-                            sink_right_edge = -1
+                            sink_right_edge = 0
                         if src_coloring[sink_reg][-1][-1][0] > src_right_edge and src_var[-1][0] > sink_right_edge:
+            
                             temp0 = src_coloring[src_reg].pop()
                             temp1 = src_coloring[sink_reg].pop()
                             src_coloring[src_reg].append(temp1)
@@ -260,6 +318,7 @@ def register_coloring(self):
                             left_edge = sys.maxsize
                         if sink_var[-1][1] < left_edge:
                             sink_coloring[src_reg].insert(0,sink_var)
+                            sink_coloring[sink_reg].pop(0)
                             settled = 1
                     '''
                     if not settled:
@@ -281,7 +340,7 @@ def register_coloring(self):
 
                     if not settled:
                         sink_var = sink_coloring[sink_reg][0]
-                        for i in range(sink_reg+1,min_register_required):
+                        for i in range(0,min_register_required):
                             if src_coloring[i]:
                                 src_right_edge = src_coloring[i][-1][-1][-1]
                             else:
@@ -298,10 +357,22 @@ def register_coloring(self):
 
                                 settled = 1
                         if not settled:
+                            '''
                             src_coloring[src_reg].pop()
                             sink_coloring[sink_reg].pop(0)
                             src_coloring[min_register_required]=[src_var]
                             sink_coloring[min_register_required]=[sink_var]
+                            '''
+                            for bb_label in coloring_result:
+                                for i in range(min_register_required):
+                                    if coloring_result[bb_label][i]:
+                                        if coloring_result[bb_label][i][0][0]==var_check:
+                                            var=coloring_result[bb_label][i].pop(0)
+                                            coloring_result[bb_label][min_register_required]=[var]
+                                        elif coloring_result[bb_label][i][-1][0]==var_check:
+                                            var=coloring_result[bb_label][i].pop()
+                                            coloring_result[bb_label][min_register_required]=[var]
+
                             min_register_required += 1
                             for bb_label in self.cfg:
                                 if min_register_required > len(coloring_result[bb_label]):
@@ -322,13 +393,20 @@ cdfg.get_global_variables = get_global_variables
 cdfg.get_local_variable_liveness = get_local_variable_liveness
 cdfg.get_living_period = get_living_period
 cdfg.register_coloring = register_coloring
+cdfg.get_block_length = get_block_length
+
+cdfg.get_local_variable_liveness_ll = get_local_variable_liveness_ll
 
 if __name__ == "__main__":
-    cdfg_obj = parse_llvm_to_cdfg("parse_result")
+    cdfg_obj = parse_llvm_to_cdfg("gcd_parse_result.txt")
     cdfg_obj.build_cfg()
     cdfg_obj.build_dfg()
     
     schedule = cdfg_obj.schedule_asap()
+    cdfg_obj.get_local_variable_liveness()
+    print("\n")
+    cdfg_obj.get_local_variable_liveness_ll()
+    print("\n")
     input_variables, output_variables = cdfg_obj.get_input_output_variables()
     print("Input variables:",input_variables)
     print("\n")
@@ -339,5 +417,5 @@ if __name__ == "__main__":
     print("\n")
     print("Schedule:", schedule)
     print("\n\n\n")
-    
     cdfg_obj.register_coloring()
+    
