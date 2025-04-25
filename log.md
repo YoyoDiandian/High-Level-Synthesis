@@ -106,3 +106,8 @@
 - 撰写`testbenchGenerator.py`
 - 将SRAM文件按照使用它们的函数放到了`testbench/`的不同文件夹下
 - 修改`genFSM.py`，详细读入SRAM文件的地址。
+
+## 4.25
+-修改了prototype分支下的`register_allocator.py`，修改内容如下：
+1. 发现`get_local_variable_liveness`存在漏洞，即从上向下计算生存周期，这可能使局部变量在还未完成使用时被错删，应当从下往上，更正后的方法`get_local_variable_liveness_ll`（见142行）
+2. 发现`register_coloring`部分不够严谨，当跨块间无法通过挪动、交换位置来对齐寄存器时，需要新建一个寄存器，原先的代码仅处理正在校验的位置，（即仅将正在检验的两个块间的该变量挪至新寄存器），但严谨的做法是遍历所有基本块，将其中所有该变量挪动到新寄存器并从旧寄存器中删除（见366-374行）
