@@ -119,8 +119,12 @@
 - 修改`autorun.sh`中部分提示词
 - `README.md`增加`Additional Example Files`部分，说明如何运行三个附加测试用例
 
-## 4.26
+## 4.26 cc60bafb1ff4fc4b590094c5bfccc25ff8d9cac2
 - polish `README.md`
 - 在`testbenchGenerator.py`中增加成功运行的提示
 - 修改`autorun.sh`中最后输出的提示信息outflow文件没有前缀的问题
 - `test.sh`成功运行前加一个✅，使成功运行提示更加显眼
+
+## 4.26 
+- 将基本类名从`CDFG`改为`HLS`，相应的变量名从`cdfg`改为`hls`
+- 修改`registerAllocator.py`中将输入变量也放入局部local variable liveness的问题，相应的将`cdfgGenerator.py`中本来定义的`CDFG`类中`params`的数据类型由list改为set

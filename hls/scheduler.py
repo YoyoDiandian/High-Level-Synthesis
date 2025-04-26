@@ -185,26 +185,26 @@ def scheduleASAP(self):
         # 保存基本块的调度结果
         self.schedule[bbLabel] = bb_schedule
 
-# def schedulePrinter(cdfg, file=None):
+# def schedulePrinter(hls, file=None):
 #     """打印调度结果"""
 #     print("\n======= 调度结果 =======", file=file)
-#     for bbLabel, cycles in cdfg.schedule.items():
+#     for bbLabel, cycles in hls.schedule.items():
 #         print(f"基本块 {bbLabel} 的调度结果:", file=file)
 #         for cycle_idx, ops in enumerate(cycles):
 #             print(f"\t周期 {cycle_idx}: ", end="", file=file)
 #             for op_idx, device_idx in ops:
-#                 op = cdfg.basicBlocks[bbLabel].ops[op_idx]
+#                 op = hls.basicBlocks[bbLabel].ops[op_idx]
 #                 op_type_name = getOperationName(op[1])
 #                 print(f"(操作 {op_idx}:{op_type_name}, 设备 {device_idx}) ", end="", file=file)
 #             print(file=file)
 #     print("=========================\n", file=file)
 
-def schedulePrinter(cdfg, file=None):
+def schedulePrinter(hls, file=None):
     """
     Print schedule results.
     """
     print("===== Schedule Results =====", file=file)
-    for bbLabel, cycles in cdfg.schedule.items():
+    for bbLabel, cycles in hls.schedule.items():
         print(f"Basic block {bbLabel}'s schedule results:", file=file)
         for cycle_idx, ops in enumerate(cycles):
             print(f"  cycle {cycle_idx}: ", end="", file=file)

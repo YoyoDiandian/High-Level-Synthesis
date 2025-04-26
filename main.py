@@ -3,13 +3,13 @@ import os
 import time
 sys.path.append(os.path.join(os.path.dirname(__file__), 'hls'))
 from hls.scheduler import addScheduler, schedulePrinter
-from hls.cdfgGenerator import CDFG, BasicBlock, cdfgPrinter
+from hls.cdfgGenerator import HLS, BasicBlock, cdfgPrinter
 from hls.registerAllocator import addRegisterAllocation, registerAllocatorPrinter
 from hls.genFSM import VerilogSyntax, VerilogGenerator, verilogPrinter
 
 def main():
     """
-    Main function: Parse LLVM IR, generate CDFG, schedule operations, 
+    Main function: Parse LLVM IR, generate HLS, schedule operations, 
     and allocate registers with register merging optimization.
     """
     start = time.time()
@@ -40,29 +40,29 @@ def main():
     outputFile = os.path.join(os.path.dirname(__file__), outputPath, 'outputFlow', name + '_outputFlow.txt')
     verilogFile = os.path.join(os.path.dirname(__file__), outputPath, 'verilog_code', name + '.v')
 
-    # Create CDFG object and parse LLVM IR
-    cdfg = CDFG()
-    addScheduler(CDFG)
-    addRegisterAllocation(CDFG, BasicBlock)
+    # Create HLS object and parse LLVM IR
+    hls = HLS()
+    addScheduler(HLS)
+    addRegisterAllocation(HLS, BasicBlock)
 
-    cdfg.llvmParser(inputFile)
-    cdfg.generateCFG()
-    cdfg.generateDFGs()
-    cdfg.scheduleASAP()
-    cdfg.registerAllocation()
-    # print(f"schedule results: {cdfg.schedule}")
+    hls.llvmParser(inputFile)
+    hls.generateCFG()
+    hls.generateDFGs()
+    hls.scheduleASAP()
+    hls.registerAllocation()
+    # print(f"schedule results: {hls.schedule}")
     # print(f"========================================")
-    # print(f"register allocation after merging: {cdfg.merged_coloring_result}")
+    # print(f"register allocation after merging: {hls.merged_coloring_result}")
 
     verilog_syntax = VerilogSyntax()
-    verilog_generator = VerilogGenerator(cdfg, verilog_syntax)
+    verilog_generator = VerilogGenerator(hls, verilog_syntax)
     verilog_generator.gen_all_code()
 
     # Print both original and optimized results
     with open(outputFile, 'w') as f:
-        cdfgPrinter(cdfg, f)
-        schedulePrinter(cdfg, f)
-        registerAllocatorPrinter(cdfg, f)
+        cdfgPrinter(hls, f)
+        schedulePrinter(hls, f)
+        registerAllocatorPrinter(hls, f)
 
     with open(verilogFile, 'w') as vf:
         verilogPrinter(verilog_generator, vf)

@@ -87,11 +87,11 @@ class VerilogSyntax:
         return "endmodule\n"
 
 class VerilogGenerator:
-    def __init__(self, cdfg, verilog_syntax):
+    def __init__(self, hls, verilog_syntax):
         """
         初始化 Verilog 生成器
         """
-        self.cdfg = cdfg
+        self.hls = hls
         self.verilog_syntax = verilog_syntax
         
         self.global_reg_num = 0
@@ -116,12 +116,12 @@ class VerilogGenerator:
         """
         生成模块的输入输出端口
         """
-        # content = "module " + self.cdfg.functionName + "("
+        # content = "module " + self.hls.functionName + "("
         # self.content_IO.append(content)
         # self.content_IO.append(f"`timescale 1ns / 1ps")
-        self.content_IO.append(f"module {self.cdfg.functionName} (")
+        self.content_IO.append(f"module {self.hls.functionName} (")
 
-        for variables in self.cdfg.params:
+        for variables in self.hls.params:
             variable_name, variable_type = variables
             if variable_type == 'array':
                 self.content_registers.append(f"\treg [31:0] {variable_name}_mem [0:255];")
@@ -134,7 +134,7 @@ class VerilogGenerator:
                 self.content_IO.append(f"\tinput\t[31:0] {variable_name},")
                 
             
-        if self.cdfg.retType == 'int':
+        if self.hls.retType == 'int':
             self.content_IO.append(f"\toutput\t[31:0] return_val,")
 
         self.content_IO.append(f"\tinput\tsys_clk,")
@@ -148,8 +148,8 @@ class VerilogGenerator:
         """
         生成全局寄存器变量
         """
-        self.global_reg_num = len(self.cdfg.global_variable)
-        for item in self.cdfg.global_variable:
+        self.global_reg_num = len(self.hls.global_variable)
+        for item in self.hls.global_variable:
             self.content_registers.append(f"\treg [31:0] reg_{item};")
             self.global_reg.append(f"{item}")
         # self.content_registers.append(f"\t")
@@ -160,7 +160,7 @@ class VerilogGenerator:
         """
         # calculating the number of local register
         key_to_count = '0'
-        num_local_reg = len(self.cdfg.merged_coloring_result[key_to_count])
+        num_local_reg = len(self.hls.merged_coloring_result[key_to_count])
         self.local_reg_num = num_local_reg
         # print(type(num_local_reg))
         for i in range(num_local_reg):
@@ -168,8 +168,8 @@ class VerilogGenerator:
         # self.content_registers.append(f"\t")
 
     def gen_state_register(self):
-        num_state = len(self.cdfg.basicBlocks.keys())
-        # print(self.cdfg.basicBlocks.keys())
+        num_state = len(self.hls.basicBlocks.keys())
+        # print(self.hls.basicBlocks.keys())
         self.content_registers.append(f"\treg [{num_state-1}:0] cur_state;")
         self.content_registers.append(f"\treg [{num_state-1}:0] last_state;")
         # self.content_registers.append(f"\t")
@@ -179,7 +179,7 @@ class VerilogGenerator:
         生成 Verilog 参数定义，使用独热码表示状态
         """
         # 获取基本块的键列表
-        bb_keys = list(self.cdfg.basicBlocks.keys())
+        bb_keys = list(self.hls.basicBlocks.keys())
         # print(bb_keys)
         num_states = len(bb_keys)  # 独热码的位数
 
@@ -216,14 +216,14 @@ class VerilogGenerator:
             reg_init.append(f"\t\treg_{i} <= 32'bx;")
         
         # 全局寄存器的初始化
-        for item in self.cdfg.global_variable:
+        for item in self.hls.global_variable:
             reg_init.append(f"\t\treg_{item} <= 32'bx;")
 
         # SRAM的初始化
-        for variables in self.cdfg.params:
+        for variables in self.hls.params:
             variable_name, variable_type = variables
             if variable_type == 'array':
-                reg_init.append(f'\t\t$readmemh("../../example/testbench/{self.cdfg.functionName}/{variable_name}.txt", {variable_name}_mem);')
+                reg_init.append(f'\t\t$readmemh("../../example/testbench/{self.hls.functionName}/{variable_name}.txt", {variable_name}_mem);')
             else:
                 continue
         
@@ -249,7 +249,7 @@ class VerilogGenerator:
 
         first_condition = True  # 标记是否是第一个条件
         # cond_all = [] # 所有的条件变量
-        for u, v, data in self.cdfg.cfg.edges(data=True):
+        for u, v, data in self.hls.cfg.edges(data=True):
             condition = data['condition']
             # print(f"condition before:{condition}")
             cond_wire = condition.split()[1] if len(condition.split()) >= 2 else condition
@@ -307,7 +307,7 @@ class VerilogGenerator:
     #     self.content_br_counter.append("\telse begin")
 
     #     # 遍历调度结果，生成分支逻辑
-    #     for bb_label, cycles in self.cdfg.schedule.items():
+    #     for bb_label, cycles in self.hls.schedule.items():
     #         cycle_count = len(cycles)  # 获取基本块运行的周期数
     #         if bb_label == "0":
     #             self.content_br_counter.append(f"\t\tif (cur_state == state_{bb_label} && counter == {cycle_count-1}) begin")
@@ -325,7 +325,7 @@ class VerilogGenerator:
         # self.content_control_logic.append(self.verilog_syntax.always_comb(sensitive_list="counter"))
         
         outer_case_items = {}
-        for bb_label, schedule_results in self.cdfg.schedule.items():
+        for bb_label, schedule_results in self.hls.schedule.items():
             inner_case_items = {}
             for cycle_idx, ops in enumerate(schedule_results):
                 check_last_cycle = (cycle_idx == len(schedule_results) - 1)
@@ -335,7 +335,7 @@ class VerilogGenerator:
 
                 cycle_logic = []
                 for op_idx, device_idx in ops:
-                    op = self.cdfg.basicBlocks[bb_label].ops[op_idx]
+                    op = self.hls.basicBlocks[bb_label].ops[op_idx]
                     out_var = op[0]
                     op_type = op[1]
                     op_type_name = resourceData.OP_TYPE_MAP.get(op_type, "UNKNOWN_OP")
@@ -397,7 +397,7 @@ class VerilogGenerator:
         :return: 寄存器编号（如 2），如果未找到则返回 None
         """
         # 获取指定基本块的寄存器分配结果
-        block_registers = self.cdfg.merged_coloring_result.get(block_name, {})
+        block_registers = self.hls.merged_coloring_result.get(block_name, {})
         
         # 遍历寄存器分配结果，查找变量所在的寄存器
         for reg, variables in block_registers.items():
@@ -422,7 +422,7 @@ class VerilogGenerator:
         
     def check_non_array_input(self, value):
         non_array_list = []
-        for input_param in self.cdfg.params:
+        for input_param in self.hls.params:
             if input_param[1] == 'non-array':
                 non_array_list.append(input_param[0])
         
@@ -515,7 +515,7 @@ class VerilogGenerator:
 
             case "OP_GE":
                 # print(f"out var: {out_var}; in var: {in_var}.")
-                # print(self.cdfg.params)
+                # print(self.hls.params)
                 for var in in_var:
                     in_signal.append(self.in_var_to_register_mapping(bb_label, var))
                 out_signal = self.out_var_to_register_mapping(bb_label, out_var)
@@ -565,7 +565,7 @@ class VerilogGenerator:
         return op_trans_output
         
     def gen_assign_logic(self):
-        if self.cdfg.retType == 'int':
+        if self.hls.retType == 'int':
             self.content_assign_logic.append(f"assign return_val = ret;")
 
         for idx, cond_var in enumerate(self.cond_all):

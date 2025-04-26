@@ -54,20 +54,20 @@ class BasicBlock:
         return self.dfg
 
 
-class CDFG:
-    """Control Data Flow Graph (CDFG) representation"""
+class HLS:
+    """Control Data Flow Graph (HLS) representation"""
     
     def __init__(self):
-        """Initialize CDFG object"""
+        """Initialize HLS object"""
         self.basicBlocks = {}  # Dictionary of basic blocks, key is the basic block label
         self.retType = None    # Function return type
         self.functionName = None  # Function name
-        self.params = []  # Function parameter list
+        self.params = set()  # Function parameter list
         self.cfg = nx.DiGraph()  # Use NetworkX directed graph to represent control flow graph
     
     def llvmParser(self, file_path):
         """
-        Parse LLVM format parse_result file to build CDFG structure
+        Parse LLVM format parse_result file to build HLS structure
         
         Args:
             file_path: Path to the parse_result file
@@ -94,7 +94,7 @@ class CDFG:
         param_matches = re.finditer(r'(array|non-array)\s+(\w+)', content)
         for match in param_matches:
             param_type, param_name = match.groups()
-            self.params.append((param_name, param_type))
+            self.params.add((param_name, param_type))
         # self.params = params
         
         # Parse basic blocks
@@ -138,12 +138,12 @@ class CDFG:
                 # Add operation to basic block
                 bb.addOP([value, op_type] + operands)
             
-            # Add basic block to CDFG
+            # Add basic block to HLS
             self.addBasicBlock(bb)
 
     def addBasicBlock(self, basic_block):
         """
-        Add basic block to CDFG
+        Add basic block to HLS
         
         Args:
             basic_block: BasicBlock object
@@ -196,19 +196,19 @@ class CDFG:
         return self.basicBlocks
 
 
-def printCDFG(cdfg, file=None):
-    """Print basic information of CDFG"""
+def printCDFG(hls, file=None):
+    """Print basic information of HLS"""
     print("===== Function Basic Information =====", file=file)
-    print(f"Function name: {cdfg.functionName}", file=file)
-    print(f"Return type: {cdfg.retType}", file=file)
-    print(f"Parameters: {cdfg.params}", file=file)
+    print(f"Function name: {hls.functionName}", file=file)
+    print(f"Return type: {hls.retType}", file=file)
+    print(f"Parameters: {hls.params}", file=file)
     print("========================\n", file=file)
 
 
-def printBasicBlocks(cdfg, file=None):
+def printBasicBlocks(hls, file=None):
     """Print information of all basic blocks"""
     print("===== Basic Block Information =====", file=file)
-    for label, bb in cdfg.basicBlocks.items():
+    for label, bb in hls.basicBlocks.items():
         print(f"Basic block {label}:", file=file)
         print(f"\tNext basic block: {bb.next_bb}", file=file)
         
@@ -218,18 +218,18 @@ def printBasicBlocks(cdfg, file=None):
     print("===================\n", file=file)
 
 
-def printCFG(cdfg, file=None):
+def printCFG(hls, file=None):
     """Print control flow graph information"""
     print("===== Control Flow Graph (CFG) =====", file=file)
-    for u, v, data in cdfg.cfg.edges(data=True):
+    for u, v, data in hls.cfg.edges(data=True):
         print(f"\t{u} -> {v} [Condition: {data['condition']}]", file=file)
     print("=======================\n", file=file)
 
 
-def printDFG(cdfg, file=None):
+def printDFG(hls, file=None):
     """Print data flow graph information for all basic blocks"""
     print("===== Data Flow Graph (DFG) =====", file=file)
-    for label, bb in cdfg.basicBlocks.items():
+    for label, bb in hls.basicBlocks.items():
         if len(bb.dfg.edges()) > 0:
             print(f"\tDFG of basic block {label}:", file=file)
             for u, v, data in bb.dfg.edges(data=True):
@@ -237,41 +237,9 @@ def printDFG(cdfg, file=None):
                 print(f"\t\tOperation {u} -> {v} [Value: {value}]", file=file)
     print("=======================\n", file=file)
 
-def cdfgPrinter(cdfg, file=None):
-    """Print basic information of CDFG"""
-    printCDFG(cdfg, file)
-    printBasicBlocks(cdfg, file)    
-    printCFG(cdfg, file)
-    printDFG(cdfg, file)
-
-
-# def main():
-#     """Main function: Parse LLVM IR and generate CDFG"""
-#     # Get file path
-#     # Get command line arguments
-#     if len(sys.argv) > 1:
-#         file_path = sys.argv[1]
-#     else:
-#         # Default path
-#         print("File path unspecified, using default path: parser/parseResult.txt")
-#         file_path = os.path.join(os.path.dirname(__file__), 'parser', 'parseResult.txt')
-    
-#     cdfg = CDFG()
-
-#     cdfg.llvmParser(file_path)
-#     cdfg.generateCFG()
-#     cdfg.generateDFGs()
-
-
-#     if not cdfg:
-#         return
-#     # Print CDFG basic information
-#     printCDFG(cdfg)
-#     printBasicBlocks(cdfg)    
-#     printCFG(cdfg)
-#     printDFG(cdfg)
-
-
-
-# if __name__ == "__main__":
-#     main()
+def cdfgPrinter(hls, file=None):
+    """Print basic information of HLS"""
+    printCDFG(hls, file)
+    printBasicBlocks(hls, file)    
+    printCFG(hls, file)
+    printDFG(hls, file)
