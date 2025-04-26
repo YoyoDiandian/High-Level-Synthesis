@@ -6,16 +6,35 @@ A toolset for High-Level Synthesis (HLS) and register allocation optimization in
 
 High-Level Synthesis is a toolset that transforms high-level programming languages (C-like) into hardware description languages and optimizes register allocation to improve circuit performance and resource utilization.
 
-The project implements a complete workflow from LLVM IR to hardware description languages, including a sophisticated register allocation algorithm that ensures variable continuity across basic blocks. Sample outputs demonstrating the workflow, including scheduling results, generated RTL code, and simulation waveforms of three example files, are provided in the `sampleOutput` directory.
+The project implements a comprehensive workflow from LLVM IR to hardware description languages. It includes LLVM IR parsing, scheduling optimization, RTL code generation, Verilog testbench creation, and simulation. The `sampleOutput` directory contains complete workflow demonstrations for three example files, showcasing parsing results, scheduling outputs, generated RTL code, and simulation waveforms.
 
 ## Key Features
 
-- **LLVM IR Parsing**: Parse computational data flow graphs from LLVM intermediate representation
 - **Scheduling Algorithms**: Implement various operation scheduling strategies for optimized parallelism
 - **Register Allocation**: Efficient register allocation algorithms to minimize register usage
 - **Automatic Code Generation**: Generate hardware description language code based on optimized scheduling and register allocation
 - **Waveform Generation**: Compile the generated RTL code and generate waveform
 - **Testbench Generation**: Generate Verilog testbench based on LLVM IR and input parameters files
+
+## Examples and Robustness
+
+Our project includes two sets of test files:
+
+### Fully-Tested Examples
+These fully-tested examples are placed in the `example/` directory, with their corresponding sample outputs in the `sampleOutput/` directory:
+- `dotprod.ll`: Dot product calculation
+- `gcd.ll`: Greatest common divisor
+- `sum.ll`: Array sum
+These examples come with complete simulation results and testbenches.
+
+### Input-Only Examples
+Additional test files located in the `example/unrun` directory include:
+- `linearSearch.ll`: Linear search implementation
+- `maxArray.ll`: Maximum value finder
+- `sumArray.ll`: Array summation
+These examples include LLVM IR and input files, ready for testing.
+
+Our HLS tool demonstrates robust performance across various algorithms and data structures, handling different control flows and memory access patterns effectively.
 
 ## Requirements
 
@@ -53,6 +72,8 @@ The project implements a complete workflow from LLVM IR to hardware description 
    - Follow installation instructions
    - Add iverilog to your system PATH
 
+4. Install `gtkwave` extension in vscode.
+
 ## Usage
 
 ### Running Tests
@@ -62,7 +83,49 @@ Execute the test suite from the project root directory:
 sh test.sh
 ```
 
-This will run all automated tests to verify the functionality of the HLS toolset. The output will under `testOutput/` directory
+This will run three fully-tested examples tests to verify the functionality of the HLS toolset. The output will under `testOutput/` directory.
+
+Upon successful test completion, you will see the following output in your terminal:
+```
+=============================
+✅ Testing completed successfully!
+Output files are available in the testOutput directory.
+```
+
+### Basic Usage
+
+1. Prepare your LLVM IR file (`.ll` format):
+   - Place the `.ll` file in the `example` directory
+   - For the provided example files (`dotprod.ll`, `gcd.ll`, `sum.ll`), testbenches are included
+   - For custom LLVM IR files:
+     - Generate testbench using the [testbench generator](#testbench-generation-instructions), or
+     - Manually create:
+       - Verilog testbench file in `example/testbench/<filename>_tb.v`
+       - SRAM initialization files in `example/testbench/<filename>/variable_name.txt`
+       
+     Note: Using the testbench generator is recommended. If you need to write a custom testbench, 
+     please follow the [Manual Step-by-Step Usage](#manual-step-by-step-usage) guide and write teshbench after the Verilog file generated.
+
+2. Run the automated workflow:
+   ```bash
+   sh autorun.sh example/<filename>.ll [output_directory]
+   ```
+   Note: `output_directory` is optional (defaults to `output/`)
+
+   The `output_directory` parameter is optional and defaults to `output/`. After successful synthesis and compilation, you will see output similar to:
+   ```
+   =============================
+   All processes completed successfully!
+   =============================
+   Output files:
+   1. Parse result: testOutput/parseResult/<filename>_parseResult.txt
+   2. Output flow file: testOutput/<filename>_outputFlow.txt
+   3. Verilog file: testOutput/verilog_code/<filename>.v
+   4. Waveform file: testOutput/waveform/<filename>_wave.vcd
+   =============================
+   ```
+
+3. Check results in the `output_directory/`
 
 ### Testbench Generation Instructions
 
@@ -73,38 +136,16 @@ To generate a Verilog testbench for your LLVM IR file:
    a 10           # Single integer variable 'a'
    b 1 2 3 4 5    # Array variable 'b'
    ```
-   Note: Variable names must match those in your LLVM IR file. Name the file as `your_file_input.txt`.
+   Note: Variable names must match those in your LLVM IR file. Name the file as `<filename>_input.txt`.
 
 2. Generate the testbench:
    ```bash
    cd example
-   python testbenchGenerator.py your_file
+   python testbenchGenerator.py <filename>
    ```
    Note: Omit file extensions (`.txt` or `.ll`) in the command.
 
-The generated testbench will be created at `example/testbench/your_file.v`. For array variables, corresponding SRAM initialization files will be placed in `example/testbench/your_file/` directory as `variable_name.txt`.
-
-### Basic Usage
-
-1. Prepare your LLVM IR file (`.ll` format):
-   - Place the `.ll` file in the `example` directory
-   - For the provided example files (`dotprod.ll`, `gcd.ll`, `sum.ll`), testbenches are included
-   - For custom LLVM IR files:
-     - Generate testbench using the [testbench generator](#testbench-generation-instructions), or
-     - Manually create:
-       - Verilog testbench file in `example/testbench/your_file_tb.v`
-       - SRAM initialization files in `example/testbench/your_file/variable_name.txt`
-       
-     Note: Using the testbench generator is recommended. If you need to write a custom testbench, 
-     please follow the [Manual Step-by-Step Usage](#manual-step-by-step-usage) guide and write teshbench after the Verilog file generated.
-
-2. Run the automated workflow:
-   ```bash
-   sh autorun.sh example/your_file.ll [output_directory]
-   ```
-   Note: `output_directory` is optional (defaults to `output/`)
-
-3. Check results in the `output_directory/`
+The generated testbench will be created at `example/testbench/<filename>.v`. For array variables, corresponding SRAM initialization files will be placed in `example/testbench/<filename>/` directory as `variable_name.txt`.
 
 ### Manual Step-by-Step Usage
 
@@ -122,29 +163,21 @@ The generated testbench will be created at `example/testbench/your_file.v`. For 
 
 3. Parse LLVM IR and run HLS workflow:
    ```bash
-   ./hls ../example/your_file.ll ../output_directory/parseResult/your_file_parseResult.txt
+   ./hls ../example/<filename>.ll ../output_directory/parseResult/<filename>_parseResult.txt
    cd ..
-   python main.py output_directory/parseResult/your_file_parseResult.txt
+   python main.py output_directory/parseResult/<filename>_parseResult.txt
    ```
    The HLS results will be in:
-   - Schedule and allocation: `output_directory/outputFlow/your_file.txt`
-   - Generated RTL: `output_directory/verilog_code/your_file.v`
+   - Schedule and allocation: `output_directory/outputFlow/<filename>.txt`
+   - Generated RTL: `output_directory/verilog_code/<filename>.v`
 
-4. Generate testbench:
+6. Simulate generated Verilog:
    ```bash
-   cd example
-   python testbenchGenerator.py your_file
-   ```
-
-5. Simulate generated Verilog:
-   ```bash
-   cd ../output_directory/verilog_code
-   iverilog -o wave your_file.v ../../example/testbench/your_file_tb.v
+   cd output_directory/verilog_code
+   iverilog -o wave <filename>.v ../../example/testbench/<filename>_tb.v
    vvp -n wave
    ```
-   The waveform will be available at `output_directory/waveform/your_file.vcd`
-
-Note: Using `autorun.sh` is recommended over manual steps as it handles the entire workflow automatically.
+   The waveform will be available at `output_directory/waveform/<filename>.vcd`
 
 ### Additional Example Files
 
@@ -156,8 +189,6 @@ In the `example/unrun` directory, we provide additional LLVM IR files and input 
 Note: These files are not included in the automated tests (`test.sh`) as they require testbench generation before running the HLS workflow.
 
 To use these examples:
-
-To use these example files:
 
 1. Copy the desired `.ll` file and corresponding `input.txt` file from `example/unrun/` to the `example/` directory
 
@@ -174,8 +205,6 @@ To use these example files:
 
 The generated files will be placed in the `output/` directory, including parsing results, RTL code, and simulation waveforms.
 
-These examples provide a good starting point for understanding how different algorithms are synthesized into hardware.
-
 ## Project Structure
 
 ```
@@ -187,8 +216,6 @@ These examples provide a good starting point for understanding how different alg
 │   ├── dotprod_input.txt  # Input file for dotprod.ll, as an input file example
 │   ├── testbenchGenerator.py  # Script to generate testbenches
 │   ├── testbench/     # Generated testbench files
-│   │   ├── dotprod_tb.v   # Testbench for dotprod.ll
-│   │   └── dotprod/       # SRAM initialization files
 │   └── unrun/         # Directory containing untested LLVM IR files and their corresponding input files
 ├── parser/            # LLVM IR parser
 │   ├── Makefile       # Build configuration

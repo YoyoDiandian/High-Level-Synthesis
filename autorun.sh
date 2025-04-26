@@ -120,7 +120,7 @@ echo "============================="
 
 echo "Output files:"
 echo "1. Parse result: $PARSE_RESULT_PATH"
-echo "2. Output flow file: $OUTPUT_DIR/outputFlow.txt"
+echo "2. Output flow file: $OUTPUT_DIR/"$BASENAME"_outputFlow.txt"
 echo "3. Verilog file: $VERILOG_FILE"
 echo "4. Waveform file: $WAVE_FILE"
 echo "============================="

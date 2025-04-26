@@ -75,3 +75,4 @@ if __name__ == "__main__":
     inputParams = inputParamsParser(inputFile)
     arrayGenerator(inputParams, outputDirectory)
     testbenchPrinter(inputParams, testbenchFile, moduleName)
+    print("Testbench generated successfully.")

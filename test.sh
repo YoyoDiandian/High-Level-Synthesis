@@ -17,5 +17,5 @@ for example in "${EXAMPLES[@]}"; do
 done
 
 echo "============================="
-echo "Testing completed successfully!"
+echo "✅ Testing completed successfully!"
 echo "Output files are available in the ${OUTPUT_DIR} directory."
