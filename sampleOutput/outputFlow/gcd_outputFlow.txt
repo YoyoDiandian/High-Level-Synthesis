@@ -1,7 +1,7 @@
 ===== Function Basic Information =====
 Function name: gcd
 Return type: int
-Parameters: [('a', 'non-array'), ('b', 'non-array')]
+Parameters: {('b', 'non-array'), ('a', 'non-array')}
 ========================
 
 ===== Basic Block Information =====
@@ -103,12 +103,12 @@ Basic block ret:
 No output variables in this block.  
 -----------------------------------
 Global Variables:
-b1  divisor  a1  remainder
+a1  b1  divisor  remainder
 -----------------------------------
 Getting Local Variable Liveness:
 Basic block 0: 
-  cycle 0, variable	a, b	is living.
-  cycle 1, variable	c, b	is living.
+  cycle 0, there's no variable living in this cycle.
+  cycle 1, variable	c	is living.
   cycle 2, variable	c, d	is living.
 Basic block start: 
   cycle 0, variable	c, d	is living.
@@ -132,8 +132,6 @@ Basic block ret:
 -----------------------------------
 Getting Living Period for every local variable:
 Basic block 0: 
-  Variable	a	lives from cycle 0 to cycle 0
-  Variable	b	lives from cycle 0 to cycle 1
   Variable	c	lives from cycle 1 to cycle 2
   Variable	d	lives from cycle 2 to cycle 2
 Basic block start: 
@@ -151,10 +149,8 @@ Basic block ret:
 Register Allocation:
 Basic block 0: 
   Register 0:
-    stores variable	a	from cycle 0 to cycle 0
     stores variable	c	from cycle 1 to cycle 2
   Register 1:
-    stores variable	b	from cycle 0 to cycle 1
     stores variable	d	from cycle 2 to cycle 2
 Basic block start: 
   Register 0:
@@ -177,10 +173,8 @@ Basic block ret:
 Register Allocation After Merging:
 Basic block 0: 
   Register 0:
-    stores variable	a	from cycle 0 to cycle 0
     stores variable	c	from cycle 1 to cycle 2
   Register 1:
-    stores variable	b	from cycle 0 to cycle 1
     stores variable	d	from cycle 2 to cycle 2
 Basic block start: 
   Register 0:

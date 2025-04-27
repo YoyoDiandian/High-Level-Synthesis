@@ -1,7 +1,7 @@
 ===== Function Basic Information =====
 Function name: dotprod
 Return type: int
-Parameters: [('a', 'array'), ('b', 'array'), ('n', 'non-array')]
+Parameters: {('n', 'non-array'), ('a', 'array'), ('b', 'array')}
 ========================
 
 ===== Basic Block Information =====
@@ -75,7 +75,7 @@ Input variables:
 Basic block 0:
 No input variables in this block.  
 Basic block start:
-c  cr  i_inc  
+c  i_inc  cr  
 Basic block calc:
 cl  
 Basic block ret:
@@ -89,32 +89,32 @@ cl
 Basic block ret:
 No output variables in this block.  
 Basic block calc:
-cr  i_inc  
+i_inc  cr  
 -----------------------------------
 Global Variables:
-i  cl
+cl  i
 -----------------------------------
 Getting Local Variable Liveness:
 Basic block 0: 
   cycle 0, there's no variable living in this cycle.
   cycle 1, variable	c	is living.
 Basic block start: 
-  cycle 0, variable	c, cr, n, i_inc	is living.
-  cycle 1, variable	c, cr, n	is living.
+  cycle 0, variable	c, i_inc, cr	is living.
+  cycle 1, variable	c, cr	is living.
   cycle 2, variable	cond	is living.
   cycle 3, there's no variable living in this cycle.
 Basic block calc: 
   cycle 0, there's no variable living in this cycle.
-  cycle 1, variable	i_inc, ai	is living.
-  cycle 2, variable	i_inc, ai	is living.
-  cycle 3, variable	i_inc, ai, bi	is living.
-  cycle 4, variable	i_inc, ai, bi	is living.
-  cycle 5, variable	i_inc, ci	is living.
-  cycle 6, variable	i_inc, ci	is living.
-  cycle 7, variable	i_inc, ci	is living.
-  cycle 8, variable	i_inc, ci	is living.
-  cycle 9, variable	i_inc, ci	is living.
-  cycle 10, variable	cr, i_inc	is living.
+  cycle 1, variable	ai, i_inc	is living.
+  cycle 2, variable	ai, i_inc	is living.
+  cycle 3, variable	ai, bi, i_inc	is living.
+  cycle 4, variable	ai, bi, i_inc	is living.
+  cycle 5, variable	ci, i_inc	is living.
+  cycle 6, variable	ci, i_inc	is living.
+  cycle 7, variable	ci, i_inc	is living.
+  cycle 8, variable	ci, i_inc	is living.
+  cycle 9, variable	ci, i_inc	is living.
+  cycle 10, variable	i_inc, cr	is living.
 Basic block ret: 
   cycle 0, there's no variable living in this cycle.
   cycle 1, there's no variable living in this cycle.
@@ -124,13 +124,12 @@ Basic block 0:
   Variable	c	lives from cycle 1 to cycle 1
 Basic block start: 
   Variable	c	lives from cycle 0 to cycle 1
-  Variable	cr	lives from cycle 0 to cycle 1
-  Variable	n	lives from cycle 0 to cycle 1
   Variable	i_inc	lives from cycle 0 to cycle 0
+  Variable	cr	lives from cycle 0 to cycle 1
   Variable	cond	lives from cycle 2 to cycle 2
 Basic block calc: 
-  Variable	i_inc	lives from cycle 1 to cycle 10
   Variable	ai	lives from cycle 1 to cycle 4
+  Variable	i_inc	lives from cycle 1 to cycle 10
   Variable	bi	lives from cycle 3 to cycle 4
   Variable	ci	lives from cycle 5 to cycle 9
   Variable	cr	lives from cycle 10 to cycle 10
@@ -144,7 +143,6 @@ Basic block 0:
   Register 1:
   Register 2:
   Register 3:
-  Register 4:
 Basic block start: 
   Register 0:
     stores variable	cond	from cycle 2 to cycle 2
@@ -152,10 +150,8 @@ Basic block start:
   Register 1:
     stores variable	cr	from cycle 0 to cycle 1
   Register 2:
-    stores variable	n	from cycle 0 to cycle 1
-  Register 3:
     stores variable	i_inc	from cycle 0 to cycle 0
-  Register 4:
+  Register 3:
 Basic block calc: 
   Register 0:
     stores variable	ai	from cycle 1 to cycle 4
@@ -164,15 +160,13 @@ Basic block calc:
     stores variable	cr	from cycle 10 to cycle 10
     stores variable	bi	from cycle 3 to cycle 4
   Register 2:
-  Register 3:
     stores variable	i_inc	from cycle 1 to cycle 10
-  Register 4:
+  Register 3:
 Basic block ret: 
   Register 0:
   Register 1:
   Register 2:
   Register 3:
-  Register 4:
 -----------------------------------
 Register Allocation After Merging:
 Basic block 0: 
@@ -180,7 +174,6 @@ Basic block 0:
     stores variable	c	from cycle 1 to cycle 1
   Register 1:
   Register 2:
-  Register 3:
 Basic block start: 
   Register 0:
     stores variable	cond	from cycle 2 to cycle 2
@@ -188,8 +181,6 @@ Basic block start:
   Register 1:
     stores variable	cr	from cycle 0 to cycle 1
   Register 2:
-    stores variable	n	from cycle 0 to cycle 1
-  Register 3:
     stores variable	i_inc	from cycle 0 to cycle 0
 Basic block calc: 
   Register 0:
@@ -200,17 +191,15 @@ Basic block calc:
     stores variable	bi	from cycle 3 to cycle 4
   Register 2:
     stores variable	i_inc	from cycle 1 to cycle 10
-  Register 3:
 Basic block ret: 
   Register 0:
   Register 1:
   Register 2:
-  Register 3:
 -----------------------------------
 
 Register Usage Statistics:
-Total registers needed: 6
+Total registers needed: 5
 Global registers needed: 2
-Local registers needed: 4
+Local registers needed: 3
 =====================================
 

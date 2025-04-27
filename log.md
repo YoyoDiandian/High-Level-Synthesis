@@ -125,6 +125,10 @@
 - 修改`autorun.sh`中最后输出的提示信息outflow文件没有前缀的问题
 - `test.sh`成功运行前加一个✅，使成功运行提示更加显眼
 
-## 4.26 
+## 4.26 a3e746356bc2b33c13ad0fbb027ee3d419810754
 - 将基本类名从`CDFG`改为`HLS`，相应的变量名从`cdfg`改为`hls`
 - 修改`registerAllocator.py`中将输入变量也放入局部local variable liveness的问题，相应的将`cdfgGenerator.py`中本来定义的`CDFG`类中`params`的数据类型由list改为set
+
+## 4.27 
+- 修改高层次综合算法的I/O port文件，增加生成的RTL Code的I/O port文件，放在根目录下。在`README.md`中说明并引用了I/O port文件
+- 重新生成了一版`sampleOutput`

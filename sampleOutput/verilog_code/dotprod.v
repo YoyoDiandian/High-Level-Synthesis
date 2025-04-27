@@ -7,12 +7,11 @@ module dotprod (
 	
 	reg [31:0] a_mem [0:255];
 	reg [31:0] b_mem [0:255];
-	reg [31:0] reg_i;
 	reg [31:0] reg_cl;
+	reg [31:0] reg_i;
 	reg [31:0] reg_0;
 	reg [31:0] reg_1;
 	reg [31:0] reg_2;
-	reg [31:0] reg_3;
 	reg [3:0] cur_state;
 	reg [3:0] last_state;
 	reg branch_ready;
@@ -31,9 +30,8 @@ always @(posedge sys_clk or negedge sys_rst_n) begin
 		reg_0 <= 32'bx;
 		reg_1 <= 32'bx;
 		reg_2 <= 32'bx;
-		reg_3 <= 32'bx;
-		reg_i <= 32'bx;
 		reg_cl <= 32'bx;
+		reg_i <= 32'bx;
 		$readmemh("../../example/testbench/dotprod/a.txt", a_mem);
 		$readmemh("../../example/testbench/dotprod/b.txt", b_mem);
 		ret <= 32'bz;
