@@ -4,17 +4,17 @@ A toolset for High-Level Synthesis (HLS) and register allocation optimization in
 
 ## Project Overview
 
-High-Level Synthesis is a toolset that transforms high-level programming languages (C-like) into hardware description languages and optimizes register allocation to improve circuit performance and resource utilization.
+High-Level Synthesis is a toolset that transforms high-level programming languages (C-like) into hardware description languages and optimizes scheduling and register allocation to improve circuit performance and resource utilization.
 
-The project implements a comprehensive workflow from LLVM IR to hardware description languages. It includes LLVM IR parsing, scheduling optimization, RTL code generation, Verilog testbench creation, and simulation. The `sampleOutput` directory contains complete workflow demonstrations for three example files, showcasing parsing results, scheduling outputs, generated RTL code, and simulation waveforms.
+The project implements a complete workflow from LLVM IR to hardware description language Verilog. It includes LLVM IR parsing, operation scheduling, RTL code generation, Verilog testbench generation, and simulation. The `sampleOutput` directory contains complete workflow demonstrations for three example files, showcasing parsing results, scheduling outputs, generated RTL code, and simulation waveforms.
 
 ## Key Features
 
 - **Scheduling Algorithms**: Implement various operation scheduling strategies for optimized parallelism
 - **Register Allocation**: Efficient register allocation algorithms to minimize register usage
-- **Automatic Code Generation**: Generate hardware description language code based on optimized scheduling and register allocation
+- **RTL Generation**: Generate hardware description language code based on optimized scheduling and register allocation
 - **Waveform Generation**: Compile the generated RTL code and generate waveform
-- **Testbench Generation**: Generate Verilog testbench based on LLVM IR and input parameters files
+- **Testbench Generation**: Generate Verilog testbench based on and input parameters files
 
 ## Examples and Robustness
 
@@ -25,6 +25,7 @@ These fully-tested examples are placed in the `example/` directory, with their c
 - `dotprod.ll`: Dot product calculation
 - `gcd.ll`: Greatest common divisor
 - `sum.ll`: Array sum
+
 These examples come with complete simulation results and testbenches.
 
 ### Input-Only Examples
@@ -32,6 +33,7 @@ Additional test files located in the `example/unrun` directory include:
 - `linearSearch.ll`: Linear search implementation
 - `maxArray.ll`: Maximum value finder
 - `sumArray.ll`: Array summation
+
 These examples include LLVM IR and input files, ready for testing.
 
 Our HLS tool demonstrates robust performance across various algorithms and data structures, handling different control flows and memory access patterns effectively.
@@ -40,7 +42,8 @@ Our HLS tool demonstrates robust performance across various algorithms and data 
 
 - Python 3.6+
 - NetworkX
-- gtkwave (optional, for visualization) or WaveTrace (VS Code extension)
+- VSCode 1.60+
+- WaveTrace (VS Code extension for waveform visualization) or GTKWave (standalone waveform viewer)
 - Icarus Verilog (for simulating generated Verilog code)
 
 ## Installation
@@ -101,7 +104,7 @@ Output files are available in the testOutput directory.
      - Generate testbench using the [testbench generator](#testbench-generation-instructions), or
      - Manually create:
        - Verilog testbench file in `example/testbench/<filename>_tb.v`
-       - SRAM initialization files in `example/testbench/<filename>/variable_name.txt`
+       - SRAM initialization files in `example/testbench/<filename>/<variable_name>.txt`
        
      Note: Using the testbench generator is recommended. If you need to write a custom testbench, 
      please follow the [Manual Step-by-Step Usage](#manual-step-by-step-usage) guide and write teshbench after the Verilog file generated.
@@ -110,7 +113,6 @@ Output files are available in the testOutput directory.
    ```bash
    sh autorun.sh example/<filename>.ll [output_directory]
    ```
-   Note: `output_directory` is optional (defaults to `output/`)
 
    The `output_directory` parameter is optional and defaults to `output/`. After successful synthesis and compilation, you will see output similar to:
    ```
@@ -145,7 +147,7 @@ To generate a Verilog testbench for your LLVM IR file:
    ```
    Note: Omit file extensions (`.txt` or `.ll`) in the command.
 
-The generated testbench will be created at `example/testbench/<filename>.v`. For array variables, corresponding SRAM initialization files will be placed in `example/testbench/<filename>/` directory as `variable_name.txt`.
+The generated testbench will be created at `example/testbench/<filename>_tb.v`. For array variables, corresponding SRAM initialization files will be placed in `example/testbench/<filename>/` directory as `<variable_name>.txt`.
 
 ### Manual Step-by-Step Usage
 
@@ -173,24 +175,19 @@ The generated testbench will be created at `example/testbench/<filename>.v`. For
 
 6. Simulate generated Verilog:
    ```bash
-   cd output_directory/verilog_code
-   iverilog -o wave <filename>.v ../../example/testbench/<filename>_tb.v
+   cd output_directory/waveform
+   iverilog -o wave ../verilog_code<filename>.v ../../example/testbench/<filename>_tb.v
    vvp -n wave
    ```
    The waveform will be available at `output_directory/waveform/<filename>.vcd`
 
 ### Additional Example Files
 
-In the `example/unrun` directory, we provide additional LLVM IR files and input data files that do not have pre-generated testbenches:
-- `linearSearch.ll` - Linear search algorithm implementation
-- `maxArray.ll` - Find maximum value in an array
-- `sumArray.ll` - Calculate sum of array elements
-
-Note: These files are not included in the automated tests (`test.sh`) as they require testbench generation before running the HLS workflow.
+In the `example/unrun` directory, we provide additional LLVM IR files and input data files that do not have pre-generated testbenches. These files are not included in the automated tests (`test.sh`) as they require testbench generation before running the HLS workflow.
 
 To use these examples:
 
-1. Copy the desired `.ll` file and corresponding `input.txt` file from `example/unrun/` to the `example/` directory
+1. Copy the desired `.ll` file and corresponding `<filename>_input.txt` file from `example/unrun/` to the `example/` directory
 
 2. Generate the testbench:
    ```bash
@@ -200,6 +197,7 @@ To use these examples:
 
 3. Run the HLS workflow:
    ```bash
+   cd ..
    sh autorun.sh example/<filename>.ll        # e.g., example/linearSearch.ll
    ```
 
@@ -217,8 +215,7 @@ For detailed information about the I/O ports of Verilog modules generated by thi
 │   ├── dotprod.ll     # Dot product example
 │   ├── gcd.ll         # Greatest common divisor example
 │   ├── sum.ll         # Sum array example
-│   ├── dotprod_input.txt  # Input file for dotprod.ll, as an input file example
-│   ├── testbenchGenerator.py  # Script to generate testbenches
+│   ├── testbenchGenerator.py  # Tool to generate testbenches
 │   ├── testbench/     # Generated testbench files
 │   └── unrun/         # Directory containing untested LLVM IR files and their corresponding input files
 ├── parser/            # LLVM IR parser
@@ -226,7 +223,7 @@ For detailed information about the I/O ports of Verilog modules generated by thi
 │   ├── main.cpp       # Parser entry point
 │   └── src/           # Parser source files
 ├── hls/               # HLS core implementation
-│   ├── resourceData/  # Resource constraints
+│   ├── resourceData.py    # Resource constraints
 │   ├── cdfgGenerator.py   # CDFG generator
 │   ├── genFSM.py      # FSM generator
 │   ├── scheduler.py   # Scheduling algorithms
@@ -275,14 +272,62 @@ ret:
     return cl;
 ```
 
-
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
+## Contributors
+
+This project was developed by a team of three contributors:
+
+### Zihan Chen (陈子涵)
+- **Github Username**: [CreamPumpkinCat](https://github.com/CreamPumpkinCat)
+- **Responsibilities**: 
+   - Key algorithm and data structure design and implementation: 
+      - Input pre-processing into **Control Data Flow Graph**;
+      - **Operation Scheduling Algorithm** with resource and latency constraints in consideration;
+      - **Register Allocation Algorithm** based on Left Algorithm, optimized to align between basic blocks, avoiding extra memory access.
+   - Algorithm explanation and pseudo-code in the report.
+   - Debugging and improvement of FSM generation.
+
+### Yaojia Wang (王瑶珈)
+- **Github Username**: [YoyoDiandian](https://github.com/YoyoDiandian)
+- **Responsibilities**:
+   - Architected the overall repository structure and workflow:
+      - Developed automation scripts (`autorun.sh`, `test.sh`) for seamless end-to-end processing;
+      - Organized example files and test cases (3 complete + 3 input-only tests);
+      - Designed and implemented the complete workflow from LLVM IR parsing to waveform generation.
+      - Managed project repository.
+   - Core algorithm implementation and optimization:
+      - Enhanced CDFG generation for better representation of control and data flow;
+      - Optimized operation scheduling with resource constraints consideration;
+      - Designed and implemented **register merging algorithm** for efficient resource utilization, optimized the structure of register allocation algorithm;
+      - Created the automated **testbench generation tool** supporting both scalar and array inputs.
+   - Documentation and project management:
+      - Authored comprehensive `README.md` with detailed installation, usage, and example instructions;
+      - Created I/O port specifications for generated Verilog modules;
+      - Completed project report writing covering introduction, background, overall design, algorithm design, experiment and conclusion (excluding algorithm details for scheduling, left algorithm and register coloring, and FSM generation).
+
+
+### Yanqiu Cao (曹言秋)
+- **Github Username**: [ccccccccyq](https://github.com/ccccccccyq)
+- **Responsibilities**:
+  - Implememtation of **Control Logic Synthesis and Verilog Code Generation**:
+    - Developed the Verilog code generation framework;
+    - Generated IO definition, wire/register and parameter definition, all the timing and assign logic;
+    - Implemented mapping of input and output variables to registers in various situations;
+    - Improved the code style of genFSM.py, making the encapsulation of functions and classes more reasonable, providing better readability, reusability, and extensibility.
+  - Implemented the testbench generator.
+  - Established the simulation and vertification workflow.
+  - Completed project report of relevant sections, providing detailed explanation and examples of how to map the existing data structures and results to Verilog code. 
+  - Modified the code style of operation scheduling and register allocation; Modify the output format of register allocation in the output flow.
+  - Modified resourceData; defined the mapping from numerical values to operation names.
+
+Together, these contributors invested significant time, expertise, and dedication to create this comprehensive end-to-end HLS toolchain. Each member's specialized contributions and collaborative efforts were essential in developing a robust system that successfully transforms LLVM IR into optimized, synthesizable Verilog code with advanced scheduling and efficient register allocation. This project represents hundreds of hours of research, implementation, debugging, and refinement—all focused on creating a tool that combines powerful functionality with exceptional ease of use for the users.
+
 ## Contact
 
-If you have any questions, please contact the project maintainer.
+If you have any questions, please contact the project maintainers.
 
 ---
 

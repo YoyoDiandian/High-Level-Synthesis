@@ -129,6 +129,10 @@
 - 将基本类名从`CDFG`改为`HLS`，相应的变量名从`cdfg`改为`hls`
 - 修改`registerAllocator.py`中将输入变量也放入局部local variable liveness的问题，相应的将`cdfgGenerator.py`中本来定义的`CDFG`类中`params`的数据类型由list改为set
 
-## 4.27 
+## 4.27 2f6c3bbb0df834e5c746564cb5a190ba40a56266
 - 修改高层次综合算法的I/O port文件，增加生成的RTL Code的I/O port文件，放在根目录下。在`README.md`中说明并引用了I/O port文件
 - 重新生成了一版`sampleOutput`
+
+## 5.9 
+- 修改了一些`README.md`里面的小问题
+- 在`README.md`中添加了分工
