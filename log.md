@@ -133,6 +133,9 @@
 - 修改高层次综合算法的I/O port文件，增加生成的RTL Code的I/O port文件，放在根目录下。在`README.md`中说明并引用了I/O port文件
 - 重新生成了一版`sampleOutput`
 
-## 5.9 
+## 5.9 0c6af6a9ea1bb0a23fa8d581595d56575c44684b
 - 修改了一些`README.md`里面的小问题
 - 在`README.md`中添加了分工
+
+## 5.9 
+- 添加了陈子涵的contribution

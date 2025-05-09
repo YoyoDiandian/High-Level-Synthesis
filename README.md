@@ -284,11 +284,12 @@ This project was developed by a team of three contributors:
 - **Github Username**: [CreamPumpkinCat](https://github.com/CreamPumpkinCat)
 - **Responsibilities**: 
    - Key algorithm and data structure design and implementation: 
-      - Input pre-processing into **Control Data Flow Graph**;
-      - **Operation Scheduling Algorithm** with resource and latency constraints in consideration;
+      - Establishment of the workflow from **LLVM parsing** to **scheduling and register allocation result**, ready for mapping to RTL codes.
+      - Input pre-processing into control data flow graph;
+      - **Operation Scheduling Algorithm** with resource and latency constraints in consideration, optimized to handle branch operations efficiently;
       - **Register Allocation Algorithm** based on Left Algorithm, optimized to align between basic blocks, avoiding extra memory access.
-   - Algorithm explanation and pseudo-code in the report.
-   - Debugging and improvement of FSM generation.
+   - Detailed explanation of key scheduling and allocation algorithms in the final report with pseudo-codes included. Expansion on optimization methodologies concerning register alignment and branch operation handling.
+   - Debugging and improvement of FSM generation. Reconstruction and standardization of the RTL code frame to avoid data and control hazard.
 
 ### Yaojia Wang (王瑶珈)
 - **Github Username**: [YoyoDiandian](https://github.com/YoyoDiandian)
